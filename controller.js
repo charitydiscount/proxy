@@ -30,6 +30,8 @@ async function updatePrograms(req, res) {
     return res.sendStatus(401);
   }
   const programs = await services.get2PPrograms(auth);
+  programs.sort((p1, p2) => p1.name.localeCompare(p2.name));
+
   const updateResult = await firestore.updatePrograms(programs);
   if (updateResult !== 0) {
     return res.sendStatus(500);

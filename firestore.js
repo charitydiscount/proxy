@@ -17,7 +17,7 @@ async function updatePrograms(programs) {
   try {
     await updateProgramsGeneral(programs);
     await updateProgramsPerCategory(programs);
-    //TODO: Update favorite shops of the users
+    await updateFavoritePrograms(programs);
   } catch (e) {
     return 1;
   }
@@ -81,6 +81,11 @@ async function deleteDocsOfCollection(collection) {
     fireBatch.delete(doc);
   })
   return fireBatch.commit();
+}
+
+async function updateFavoritePrograms(programs) {
+  const favoritePrograms = await db.collection('favoriteShops').get();
+  //TODO
 }
 
 module.exports = { updatePrograms };
