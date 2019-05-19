@@ -36,6 +36,11 @@ async function updatePrograms(req, res) {
   if (updateResult !== 0) {
     return res.sendStatus(500);
   }
+  const metricsResult = await firestore.updateMetrics(programs);
+  if (metricsResult !== 0) {
+    return res.sendStatus(500);
+  }
+
   res.sendStatus(200);
 }
 
