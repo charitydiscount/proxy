@@ -19,6 +19,7 @@ async function updatePrograms(programs) {
     await updateProgramsPerCategory(programs);
     await updateFavoritePrograms(programs);
   } catch (e) {
+    console.log(e);
     return 1;
   }
 
@@ -35,8 +36,9 @@ async function updateMetrics(programs) {
   }
 
   try {
-    await updateProgramsCount(programs);
+    await updateProgramsMeta(programs);
   } catch (e) {
+    console.log(e);
     return 1;
   }
 
@@ -106,7 +108,7 @@ async function deleteDocsOfCollection(collection) {
 }
 
 async function updateFavoritePrograms(programs) {
-  const favoritePrograms = await db.collection('favoriteShops').get();
+  const favoritePrograms = await db.collection('favoritePrograms').get();
   if (favoritePrograms.empty) {
     return 0;
   }
@@ -140,13 +142,18 @@ async function updateFavoritePrograms(programs) {
   });
 }
 
-async function updateProgramsCount(programs) {
+async function updateProgramsMeta(programs) {
+  const categories = programs.map(p => p.category);
+  const uniqueCategories = [...new Set(categories)];
+  uniqueCategories.sort((c1, c2) => c1.localeCompare(c2));
+
   return db
     .collection('meta')
     .doc('programs')
     .set(
       {
-        count: programs.length
+        count: programs.length,
+        categories: uniqueCategories
       },
       { merge: true }
     );
