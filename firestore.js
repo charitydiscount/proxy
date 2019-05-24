@@ -144,7 +144,10 @@ async function updateFavoritePrograms(programs) {
 }
 
 async function updateAffiliateMeta(auth) {
-  return db.collection('meta').doc('2performant').set({ uniqueCode: auth.uniqueCode });
+  return db
+    .collection('meta')
+    .doc('2performant')
+    .set({ uniqueCode: auth.uniqueCode }, { merge: true });
 }
 
 async function updateProgramsMeta(programs) {
