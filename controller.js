@@ -4,20 +4,19 @@ const firestore = require('./firestore');
 /**
  * Retrieve the 2performant authentication information
  */
-function auth(req, res) {
-  services.get2PAuthHeaders().then(authData => {
-    if (!authData) {
-      return res.sendStatus(401);
-    }
+async function auth(req, res) {
+  const authData = await services.get2PAuthHeaders();
+  if (!authData) {
+    return res.sendStatus(401);
+  }
 
-    res.setHeader('access-token', authData.accessToken);
-    res.setHeader('client', authData.client);
-    res.setHeader('uid', authData.uid);
-    res.setHeader('token-type', authData.tokenType);
-    res.setHeader('unique-id', authData.uniqueCode);
+  res.setHeader('access-token', authData.accessToken);
+  res.setHeader('client', authData.client);
+  res.setHeader('uid', authData.uid);
+  res.setHeader('token-type', authData.tokenType);
+  res.setHeader('unique-id', authData.uniqueCode);
 
-    return res.send();
-  });
+  return res.send();
 }
 
 /**
@@ -36,7 +35,7 @@ async function updatePrograms(req, res) {
   if (updateResult !== 0) {
     return res.sendStatus(500);
   }
-  const metricsResult = await firestore.updateMetrics(programs);
+  const metricsResult = await firestore.updateMeta(auth, programs);
   if (metricsResult !== 0) {
     return res.sendStatus(500);
   }

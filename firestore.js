@@ -30,12 +30,13 @@ async function updatePrograms(programs) {
  * Update the overall metrics
  * @param {Object[]} programs
  */
-async function updateMetrics(programs) {
+async function updateMeta(auth, programs) {
   if (!Array.isArray(programs)) {
     return null;
   }
 
   try {
+    await updateAffiliateMeta(auth);
     await updateProgramsMeta(programs);
   } catch (e) {
     console.log(e);
@@ -142,6 +143,10 @@ async function updateFavoritePrograms(programs) {
   });
 }
 
+async function updateAffiliateMeta(auth) {
+  return db.collection('meta').doc('2performant').set({ uniqueCode: auth.uniqueCode });
+}
+
 async function updateProgramsMeta(programs) {
   const categories = programs.map(p => p.category);
   const uniqueCategories = [...new Set(categories)];
@@ -168,4 +173,4 @@ function getProgramStatus(uniqueCode, programs) {
   }
 }
 
-module.exports = { updatePrograms, updateMetrics };
+module.exports = { updatePrograms, updateMeta };
