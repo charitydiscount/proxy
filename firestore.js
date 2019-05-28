@@ -54,17 +54,13 @@ async function updateProgramsGeneral(programs) {
   }
 
   const batchSize = 50;
-  let pushPromises = [];
   for (let index = 0; index < programs.length; index += batchSize) {
     const docPrograms = programs.slice(index, index + batchSize);
-    pushPromises.push(
-      db.collection('shops').add({
-        batch: docPrograms,
-        createdAt: Firestore.FieldValue.serverTimestamp()
-      })
-    );
+    await db.collection('shops').add({
+      batch: docPrograms,
+      createdAt: Firestore.FieldValue.serverTimestamp()
+    });
   }
-  return Promise.all(pushPromises);
 }
 
 async function updateProgramsPerCategory(programs) {
@@ -83,20 +79,15 @@ async function updateProgramsPerCategory(programs) {
     }
   });
 
-  let pushPromises = [];
   for (const key in categories) {
     if (categories.hasOwnProperty(key)) {
-      pushPromises.push(
-        db.collection('categories').add({
-          category: key,
-          batch: categories[key],
-          createdAt: Firestore.FieldValue.serverTimestamp()
-        })
-      );
+      await db.collection('categories').add({
+        category: key,
+        batch: categories[key],
+        createdAt: Firestore.FieldValue.serverTimestamp()
+      });
     }
   }
-
-  return Promise.all(pushPromises);
 }
 
 async function deleteDocsOfCollection(collection) {

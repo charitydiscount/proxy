@@ -30,12 +30,15 @@ async function updatePrograms(req, res) {
   }
   const programs = await services.get2PPrograms(auth);
   programs.sort((p1, p2) => p1.name.localeCompare(p2.name));
+  const uniquePrograms = programs.filter(
+    (p, index, array) => !index || p.id != array[index - 1].id
+  );
 
-  const updateResult = await firestore.updatePrograms(programs);
+  const updateResult = await firestore.updatePrograms(uniquePrograms);
   if (updateResult !== 0) {
     return res.sendStatus(500);
   }
-  const metricsResult = await firestore.updateMeta(auth, programs);
+  const metricsResult = await firestore.updateMeta(auth, uniquePrograms);
   if (metricsResult !== 0) {
     return res.sendStatus(500);
   }
