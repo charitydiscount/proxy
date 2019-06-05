@@ -43,6 +43,8 @@ async function updatePrograms(req, res) {
     return res.sendStatus(500);
   }
 
+  await services.updateSearchIndex(uniquePrograms);
+
   res.sendStatus(200);
 }
 

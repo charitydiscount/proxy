@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const convert = require('./serializers/market');
+const algoliasearch = require('algoliasearch');
 require('dotenv').config();
 
 /**
@@ -96,4 +97,33 @@ async function get2PProgramsForPage(authData, page, perPage) {
   return convert.toMarket(respBody, '2p');
 }
 
-module.exports = { convert2PToAffiliateUrl, get2PAuthHeaders, get2PPrograms };
+async function updateSearchIndex(programs) {
+  const algolia = algoliasearch(
+    process.env.ALGOLIA_APP_ID,
+    process.env.ALGOLIA_API_KEY
+  );
+
+  const index = algolia.initIndex(process.env.ALGOLIA_INDEX_NAME);
+
+  const records = programs.map(program => {
+    return {
+      ...program,
+      objectID: program.id
+    };
+  });
+
+  try {
+    await index.saveObjects(records);
+  } catch (e) {
+    console.log(`Failed to update the search index: ${e}`);
+  }
+
+  console.log(`${records.length} records added to the search index`);
+}
+
+module.exports = {
+  convert2PToAffiliateUrl,
+  get2PAuthHeaders,
+  get2PPrograms,
+  updateSearchIndex
+};
