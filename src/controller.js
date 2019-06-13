@@ -64,4 +64,9 @@ async function getProgramPromotions(req, res) {
   res.json(promotions);
 }
 
-module.exports = { auth, updatePrograms, getProgramPromotions };
+async function search(req, res) {
+  const hits = await services.search(req.query.query, req.query.exact || false);
+  res.json(hits);
+}
+
+module.exports = { auth, updatePrograms, getProgramPromotions, search };

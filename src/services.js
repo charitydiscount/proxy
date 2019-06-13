@@ -159,9 +159,25 @@ async function get2PPromotionDataForPage(authData, page, perPage) {
   return promotionsConverter.toPromotions(respBody, '2p');
 }
 
+async function search(query, exact = false) {
+  const algolia = algoliasearch(
+    process.env.ALGOLIA_APP_ID,
+    process.env.ALGOLIA_API_KEY_SEARCH
+  );
+
+  const index = algolia.initIndex(process.env.ALGOLIA_INDEX_NAME);
+  const result = await index.search({
+    query: query,
+    typoTolerance: !exact
+  });
+
+  return result.hits;
+}
+
 module.exports = {
   get2PAuthHeaders,
   get2PPrograms,
   updateSearchIndex,
-  get2PPromotions
+  get2PPromotions,
+  search
 };
