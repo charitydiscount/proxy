@@ -1,3 +1,4 @@
+//@ts-check
 const services = require('./services');
 const firestore = require('./firestore');
 
@@ -48,4 +49,19 @@ async function updatePrograms(req, res) {
   res.sendStatus(200);
 }
 
-module.exports = { auth, updatePrograms };
+async function getProgramPromotions(req, res) {
+  const auth = await services.get2PAuthHeaders();
+  if (!auth) {
+    console.log('Failed 2p auth');
+    return res.sendStatus(401);
+  }
+
+  const promotions = await services.get2PPromotions(
+    auth,
+    parseInt(req.params.programId)
+  );
+
+  res.json(promotions);
+}
+
+module.exports = { auth, updatePrograms, getProgramPromotions };

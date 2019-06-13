@@ -1,28 +1,20 @@
-const fetch = require('node-fetch');
-const convert = require('./serializers/market');
+//@ts-check
+const fetch = require('node-fetch').default;
+const marketConverter = require('./serializers/market');
+const promotionsConverter = require('./serializers/promotions');
 const algoliasearch = require('algoliasearch');
 require('dotenv').config();
 
-/**
- * Convert a shop link to 2Performant affiliate link
- * @param {String} url Base URL of the shop
- * @param {String} affiliateCode Affiliate code
- * @param {String} uniqueId Unique ID of the shop
- */
-function convert2PToAffiliateUrl(url, affiliateCode, uniqueId) {
-  const baseUrl =
-    'https://event.2performant.com/events/click?ad_type=quicklink';
-  const affCode = `aff_code=${affiliateCode}`;
-  const unique = `unique=${uniqueId}`;
-  const redirect = `redirect_to=${url}`;
-
-  return `${baseUrl}&${affCode}&${unique}&${redirect}`;
-}
+let authHeaders;
 
 /**
  * Retrieve the 2Performant authentication data
  */
 async function get2PAuthHeaders() {
+  if (authHeaders) {
+    return authHeaders;
+  }
+
   const reqHeaders = { 'Content-Type': 'application/json' };
   const reqBody = {
     user: { email: process.env.TWOP_EMAIL, password: process.env.TWOP_PASS }
@@ -43,13 +35,14 @@ async function get2PAuthHeaders() {
 
   const resBody = await twoPResponse.json();
 
-  return {
+  authHeaders = {
     accessToken: twoPResponse.headers.get('access-token'),
     client: twoPResponse.headers.get('client'),
     uid: twoPResponse.headers.get('uid'),
     tokenType: twoPResponse.headers.get('token-type'),
     uniqueCode: resBody.user.unique_code
   };
+  return authHeaders;
 }
 
 /**
@@ -60,16 +53,15 @@ async function get2PPrograms(auth) {
   const perPage = 200;
   let market = await get2PProgramsForPage(auth, 1, perPage);
   let programs = market.programs;
-  const pages = market.metadata.pagination.pages;
-  if (market.metadata.pagination.current_page === pages) {
+
+  const totalPages = market.metadata.pagination.pages;
+  const firstPage = market.metadata.pagination.current_page;
+
+  if (firstPage === totalPages) {
     return programs;
   }
 
-  for (
-    let page = market.metadata.pagination.current_page;
-    page < pages;
-    page++
-  ) {
+  for (let page = firstPage; page < totalPages; page++) {
     market = await get2PProgramsForPage(auth, page, perPage);
     programs = programs.concat(market.programs);
   }
@@ -94,7 +86,7 @@ async function get2PProgramsForPage(authData, page, perPage) {
 
   const respBody = await twoPResponse.json();
 
-  return convert.toMarket(respBody, '2p');
+  return marketConverter.toMarket(respBody, '2p');
 }
 
 async function updateSearchIndex(programs) {
@@ -121,9 +113,55 @@ async function updateSearchIndex(programs) {
   console.log(`${records.length} records added to the search index`);
 }
 
+async function get2PPromotions(authData, programId) {
+  const perPage = 30;
+
+  let promotionData = await get2PPromotionDataForPage(authData, 1, perPage);
+  let promotions = promotionData.promotions.filter(
+    p => p.programId === programId
+  );
+
+  const totalPages = promotionData.metadata.pagination.pages;
+  const firstPage = promotionData.metadata.pagination.current_page;
+
+  if (firstPage === totalPages) {
+    return promotions;
+  }
+
+  for (let page = firstPage; page < totalPages; page++) {
+    promotionData = await get2PPromotionDataForPage(authData, page, perPage);
+    const pagePromotions = promotionData.promotions.filter(
+      p => p.programId === programId
+    );
+    promotions = promotions.concat(pagePromotions);
+  }
+
+  return promotions;
+}
+
+async function get2PPromotionDataForPage(authData, page, perPage) {
+  const url = `https://api.2performant.com/affiliate/advertiser_promotions?filter[affrequest_status]=accepted&page=${page}&perpage=${perPage}`;
+  const headers = {
+    'access-token': authData.accessToken,
+    client: authData.client,
+    uid: authData.uid,
+    'token-type': authData.tokenType,
+    'Content-Type': 'application/json',
+    Accept: 'application/json'
+  };
+  const twoPResponse = await fetch(url, {
+    method: 'get',
+    headers
+  });
+
+  const respBody = await twoPResponse.json();
+
+  return promotionsConverter.toPromotions(respBody, '2p');
+}
+
 module.exports = {
-  convert2PToAffiliateUrl,
   get2PAuthHeaders,
   get2PPrograms,
-  updateSearchIndex
+  updateSearchIndex,
+  get2PPromotions
 };

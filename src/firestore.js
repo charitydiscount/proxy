@@ -1,6 +1,7 @@
+//@ts-check
 const Firestore = require('@google-cloud/firestore');
 
-const db = new Firestore({
+const db = new Firestore.Firestore({
   projectId: 'charitydiscount',
   keyFilename: 'CharityDiscount.json'
 });
@@ -106,6 +107,7 @@ async function updateFavoritePrograms(programs) {
   }
 
   favoritePrograms.forEach(f => {
+    // @ts-ignore
     const updateNeeded = f.data.programs.reduce((prev, favProgram) => {
       if (prev === true) {
         return true;
@@ -119,8 +121,10 @@ async function updateFavoritePrograms(programs) {
       return false;
     });
     if (updateNeeded === true) {
-      f.set(
+      // @ts-ignore
+      f.getDocumentReference().set(
         {
+          // @ts-ignore
           programs: f.data.programs.map(favProgram => {
             return {
               ...favProgram,
