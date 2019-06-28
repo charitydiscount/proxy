@@ -16,6 +16,7 @@
     "express-bearer-token": "^2.4.0",
     "firebase-admin": "^8.1.0",
     "helmet": "^3.18.0",
+    "jwt-decode": "^2.2.0",
     "node-fetch": "^2.6.0"
   }
 }
