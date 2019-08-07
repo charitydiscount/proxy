@@ -1,1 +1,4 @@
 app.yaml
+*.pyc
+CharityDiscount.json
+lib/*

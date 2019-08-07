@@ -1,17 +1,40 @@
 import logging
 import json
+# import firebase_admin
 
 from os import environ
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from google.appengine.api import urlfetch
 from google.appengine.api import memcache
+
+import pdb
 
 app = Flask(__name__)
 perPage = 30
 
+# default_app = firebase_admin.initialize_app()
 
 @app.route('/programs/<int:program_id>/promotions', methods=['GET'])
 def getProgramPromotions(program_id):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return app.response_class(response='',
+                                  status=401,
+                                  mimetype='application/json')
+    # if auth_header:
+    #     token = auth_header.split(" ")[1]
+    #     try:
+    #         auth.verify_id_token(token)
+    #     except Exception as e:
+    #         logging.info(e)
+    #         return app.response_class(response='',
+    #                                   status=401,
+    #                                   mimetype='application/json')
+    # else:
+    #     return app.response_class(response='',
+    #                               status=401,
+    #                               mimetype='application/json')
+
     promotions = memcache.get(str(program_id))
     if promotions is not None:
         return jsonify(promotions)
@@ -21,27 +44,25 @@ def getProgramPromotions(program_id):
         return app.response_class(response='',
                                   status=401,
                                   mimetype='application/json')
-
     promotionData = get2PPromotionDataForPage(authData, 1, perPage)
 
     totalPages = promotionData['metadata']['pagination']['pages']
     firstPage = promotionData['metadata']['pagination']['current_page']
 
-    promotions = list(
-        map(lambda p: p['programId'] == program_id,
-            promotionData['promotions']))
+    promotions = filter(lambda p: p['programId'] == program_id,
+                        promotionData['promotions'])
 
     if firstPage == totalPages:
         memcache.add(str(program_id), promotions, 3600)
         return promotions
 
-    for page in range(firstPage, totalPages):
+    for page in range(firstPage + 1, totalPages):
         promotionData = get2PPromotionDataForPage(authData, page, perPage)
         promotions.append(
-            list(
-                map(lambda p: p['programId'] == program_id,
-                    promotionData['promotions'])))
+            filter(lambda p: p['programId'] == program_id,
+                   promotionData['promotions']))
 
+    promotions = filter(None, promotions)
     memcache.add(str(program_id), promotions, 3600)
     return jsonify(promotions)
 
@@ -85,7 +106,8 @@ def get2PAuthHeaders():
 
 
 def get2PPromotionDataForPage(authData, page, perPage):
-    url = 'https://api.2performant.com/affiliate/advertiser_promotions?filter[affrequest_status]=accepted&page={page}&perpage={perPage}'
+    url = 'https://api.2performant.com/affiliate/advertiser_promotions?filter[affrequest_status]=accepted&page={}&perpage={}'.format(
+        page, perPage)
 
     headers = {
         'access-token': authData['accessToken'],
@@ -121,7 +143,7 @@ def parsePromotionsResponse(jsonData, source):
 
 def getPromotions(responseDict, source):
     if not 'advertiser_promotions' in responseDict:
-        return {}
+        return []
 
     return map(
         lambda p: {
