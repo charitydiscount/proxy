@@ -6,7 +6,7 @@ const { Client } = require('@elastic/elasticsearch');
 require('dotenv').config();
 
 const elastic = new Client({
-  node: 'http://35.240.61.9/elasticsearch',
+  node: process.env.ENDPOINT,
   auth: {
     username: process.env.ELASTIC_USER,
     password: process.env.ELASTIC_PASS
