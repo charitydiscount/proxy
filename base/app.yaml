@@ -1,1 +1,2 @@
+service: default
 runtime: nodejs10

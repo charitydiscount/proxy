@@ -1,0 +1,6 @@
+dispatch:
+  - url: 'affiliate-dot-charity-proxy.appspot.com/*'
+    service: affiliate
+
+  - url: 'charity-proxy.appspot.com/*'
+    service: default
