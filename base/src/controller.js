@@ -49,24 +49,9 @@ async function updatePrograms(req, res) {
   res.sendStatus(200);
 }
 
-async function getProgramPromotions(req, res) {
-  const auth = await services.get2PAuthHeaders();
-  if (!auth) {
-    console.log('Failed 2p auth');
-    return res.sendStatus(401);
-  }
-
-  const promotions = await services.get2PPromotions(
-    auth,
-    parseInt(req.params.programId)
-  );
-
-  res.json(promotions);
-}
-
 async function search(req, res) {
   const hits = await services.search(req.query.query, req.query.exact || false);
   res.json(hits);
 }
 
-module.exports = { auth, updatePrograms, getProgramPromotions, search };
+module.exports = { auth, updatePrograms, search };

@@ -1,9 +1,17 @@
 //@ts-check
 const fetch = require('node-fetch').default;
 const marketConverter = require('./serializers/market');
-const promotionsConverter = require('./serializers/promotions');
-const algoliasearch = require('algoliasearch');
+const { Client } = require('@elastic/elasticsearch');
+
 require('dotenv').config();
+
+const elastic = new Client({
+  node: 'http://35.240.61.9/elasticsearch',
+  auth: {
+    username: process.env.ELASTIC_USER,
+    password: process.env.ELASTIC_PASS
+  }
+});
 
 let authHeaders;
 
@@ -61,7 +69,7 @@ async function get2PPrograms(auth) {
     return programs;
   }
 
-  for (let page = firstPage; page < totalPages; page++) {
+  for (let page = firstPage; page <= totalPages; page++) {
     market = await get2PProgramsForPage(auth, page, perPage);
     programs = programs.concat(market.programs);
   }
@@ -89,95 +97,86 @@ async function get2PProgramsForPage(authData, page, perPage) {
   return marketConverter.toMarket(respBody, '2p');
 }
 
+/**
+ * Update the search index with the provided programs (overrides existing index)
+ * @param {Array} programs
+ */
 async function updateSearchIndex(programs) {
-  const algolia = algoliasearch(
-    process.env.ALGOLIA_APP_ID,
-    process.env.ALGOLIA_API_KEY
+  const flatMap = (f, arr) => arr.reduce((x, y) => [...x, ...f(y)], []);
+  const bulkBody = flatMap(
+    program => [
+      { index: { _index: process.env.INDEX_PROGRAMS, _id: program.id } },
+      program
+    ],
+    programs
   );
-
-  const index = algolia.initIndex(process.env.ALGOLIA_INDEX_NAME);
-
-  const records = programs.map(program => {
-    return {
-      ...program,
-      objectID: program.id
-    };
-  });
 
   try {
-    await index.saveObjects(records);
+    const { body: bulkResponse } = await elastic.bulk({
+      // @ts-ignore
+      refresh: true,
+      body: bulkBody
+    });
+
+    if (bulkResponse.errors) {
+      const erroredDocuments = [];
+      bulkResponse.items.forEach((action, i) => {
+        const operation = Object.keys(action)[0];
+        if (action[operation].error) {
+          erroredDocuments.push({
+            status: action[operation].status,
+            error: action[operation].error,
+            operation: bulkBody[i * 2],
+            document: bulkBody[i * 2 + 1]
+          });
+        }
+      });
+      console.log(erroredDocuments);
+    }
   } catch (e) {
-    console.log(`Failed to update the search index: ${e}`);
+    console.log(e);
+    return;
   }
 
-  console.log(`${records.length} records added to the search index`);
-}
-
-async function get2PPromotions(authData, programId) {
-  const perPage = 30;
-
-  let promotionData = await get2PPromotionDataForPage(authData, 1, perPage);
-  let promotions = promotionData.promotions.filter(
-    p => p.programId === programId
-  );
-
-  const totalPages = promotionData.metadata.pagination.pages;
-  const firstPage = promotionData.metadata.pagination.current_page;
-
-  if (firstPage === totalPages) {
-    return promotions;
-  }
-
-  for (let page = firstPage; page < totalPages; page++) {
-    promotionData = await get2PPromotionDataForPage(authData, page, perPage);
-    const pagePromotions = promotionData.promotions.filter(
-      p => p.programId === programId
-    );
-    promotions = promotions.concat(pagePromotions);
-  }
-
-  return promotions;
-}
-
-async function get2PPromotionDataForPage(authData, page, perPage) {
-  const url = `https://api.2performant.com/affiliate/advertiser_promotions?filter[affrequest_status]=accepted&page=${page}&perpage=${perPage}`;
-  const headers = {
-    'access-token': authData.accessToken,
-    client: authData.client,
-    uid: authData.uid,
-    'token-type': authData.tokenType,
-    'Content-Type': 'application/json',
-    Accept: 'application/json'
-  };
-  const twoPResponse = await fetch(url, {
-    method: 'get',
-    headers
+  const { body: count } = await elastic.count({
+    index: process.env.INDEX_PROGRAMS
   });
-
-  const respBody = await twoPResponse.json();
-
-  return promotionsConverter.toPromotions(respBody, '2p');
+  console.log(count);
 }
 
+/**
+ * Search the programs index based on the provied query (simple search term)
+ * @param {String} query
+ * @param {Boolean} exact
+ */
 async function search(query, exact = false) {
-  const algolia = algoliasearch(
-    process.env.ALGOLIA_APP_ID,
-    process.env.ALGOLIA_API_KEY_SEARCH
-  );
+  let queryOperator = 'prefix';
+  if (exact) {
+    queryOperator = 'term';
+  }
+  try {
+    const { body } = await elastic.search({
+      index: process.env.INDEX_PROGRAMS,
+      body: {
+        query: {
+          [queryOperator]: {
+            name: {
+              value: query
+            }
+          }
+        }
+      }
+    });
 
-  const index = algolia.initIndex(process.env.ALGOLIA_INDEX_NAME);
-  const result = await index.search({
-    query: query,
-    typoTolerance: !exact
-  });
-
-  return result.hits;
+    return body.hits;
+  } catch (e) {
+    console.log(e);
+  }
 }
 
 module.exports = {
   get2PAuthHeaders,
   get2PPrograms,
   updateSearchIndex,
-  get2PPromotions,
   search
 };
