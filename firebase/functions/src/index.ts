@@ -11,16 +11,14 @@ const runtimeOpts = {
 export const updatePrograms = functions
   //@ts-ignore
   .runWith(runtimeOpts)
-  .https
-  .onRequest(async (request: any, response: any) => {
-    console.log(request.method);
-    if (request.method !== 'PUT') {
-      response.sendStatus(400);
-      return;
-    }
-
+  .pubsub
+  .schedule('* 6 * * 1')
+  .timeZone('Europe/Bucharest')
+  .onRun(async (context: any) => {
     const programs = await twoPService.get2PPrograms();
     programs.sort((p1, p2) => p1.name.localeCompare(p2.name));
+
+    console.log(`Retrieved ${programs.length} programs`);
 
     try {
       await firestoreService.updatePrograms(programs);
@@ -28,9 +26,8 @@ export const updatePrograms = functions
       await elasticService.updateSearchIndex(programs);
     } catch (e) {
       console.log(e);
-      response.sendStatus(500);
-      return;
+      return null;
     }
 
-    response.sendStatus(200);
+    return null;
   });

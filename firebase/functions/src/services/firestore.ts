@@ -25,6 +25,8 @@ export async function updatePrograms(programs: Program[]) {
     return 1;
   }
 
+  console.log(`Saved ${programs.length} programs`);
+
   return 0;
 }
 
