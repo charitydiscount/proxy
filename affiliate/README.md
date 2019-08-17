@@ -1,5 +1,3 @@
-## Getting Started
-
-1. Copy the _app.yaml.example_ to _app.yaml_ and fill in the environmental variables
-2. _pip install -t lib -r requirements.txt_
-3. _gcloud app deploy_
+## Setup
+1. Copy the *src/main/webapp/WEB-INF/appengine-web.template.xml* to *appengine-web.xml* and fill in the environment variables.
+2. Add the firebase access json to directory *src/main/resources* (must be called *CharityDiscount.json*) (this can be configured in the xml from step 1).
