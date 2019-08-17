@@ -1,9 +1,28 @@
-flask/
-app.yaml.example
-README.md
-.gcloudignore
-.git
-.gitignore
-__pycache__/
-*.pyc
+# Bazel
+/bazel-*
 
+# Java
+*.class
+
+# intellij
+.idea/
+*.iml
+
+# Eclipse files
+.project
+.classpath
+.settings
+
+# vim
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+Session.vim
+.netrwhist
+*~
+tags
+
+# VS Code
+.vscode/
+
+# OSX
+.DS_Store
