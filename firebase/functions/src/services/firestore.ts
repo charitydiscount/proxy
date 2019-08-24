@@ -1,6 +1,7 @@
 const Firestore = require('@google-cloud/firestore');
 import { Program } from '../serializers/market';
 import { AuthHeaders } from './two-performant';
+import { config } from 'firebase-functions';
 
 const db = new Firestore.Firestore({
   projectId: 'charitydiscount',
@@ -50,7 +51,7 @@ async function updateProgramsGeneral(programs: Program[]) {
     console.log('Failed to delete general programs');
   }
 
-  const batchSize = 50;
+  const batchSize = parseInt(config().firestore.programs_batch_size);
   for (let index = 0; index < programs.length; index += batchSize) {
     const docPrograms = programs.slice(index, index + batchSize);
     await db.collection('shops').add({
