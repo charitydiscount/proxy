@@ -17,7 +17,6 @@ async function updatePrograms(programs) {
 
   try {
     await updateProgramsGeneral(programs);
-    await updateProgramsPerCategory(programs);
     await updateFavoritePrograms(programs);
   } catch (e) {
     console.log(e);
@@ -61,33 +60,6 @@ async function updateProgramsGeneral(programs) {
       batch: docPrograms,
       createdAt: Firestore.FieldValue.serverTimestamp()
     });
-  }
-}
-
-async function updateProgramsPerCategory(programs) {
-  try {
-    await deleteDocsOfCollection('categories');
-  } catch (e) {
-    console.log('Failed to delete categories');
-  }
-
-  let categories = {};
-  programs.forEach(p => {
-    if (categories.hasOwnProperty(p.category)) {
-      categories[p.category].push(p);
-    } else {
-      categories[p.category] = [p];
-    }
-  });
-
-  for (const key in categories) {
-    if (categories.hasOwnProperty(key)) {
-      await db.collection('categories').add({
-        category: key,
-        batch: categories[key],
-        createdAt: Firestore.FieldValue.serverTimestamp()
-      });
-    }
   }
 }
 
