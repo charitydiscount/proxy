@@ -3,8 +3,8 @@ function toPromotions(json, source) {
   return {
     promotions: getPromotions(json, source),
     metadata: {
-      pagination: json.pagination
-    }
+      pagination: json.pagination,
+    },
   };
 }
 
@@ -13,7 +13,7 @@ function getPromotions(json, source) {
     return [];
   }
 
-  return json.advertiser_promotions.map(p => {
+  return json.advertiser_promotions.map((p) => {
     return {
       id: p.id,
       name: p.name,
@@ -22,7 +22,7 @@ function getPromotions(json, source) {
       promotionStart: p.promotion_start,
       promotionEnd: p.promotion_end,
       landingPageLink: p.landing_page_link,
-      source: source
+      source: source,
     };
   });
 }

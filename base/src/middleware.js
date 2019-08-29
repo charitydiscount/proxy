@@ -4,7 +4,7 @@ const jwtDecode = require('jwt-decode');
 
 admin.initializeApp({
   credential: admin.credential.cert(firebaseKeys),
-  databaseURL: 'https://charitydiscount.firebaseio.com'
+  databaseURL: 'https://charitydiscount.firebaseio.com',
 });
 
 /**
@@ -16,6 +16,7 @@ exports.jwtAuthenticate = (req, res, next) => {
   }
   try {
     if (jwtDecode(req.token).email === process.env.SERVICE_ACCOUNT) {
+      req.isServiceAccount = true;
       next();
       return;
     }
@@ -26,6 +27,9 @@ exports.jwtAuthenticate = (req, res, next) => {
   admin
     .auth()
     .verifyIdToken(req.token)
-    .then(() => next())
+    .then(() => {
+      req.isServiceAccount = true;
+      next();
+    })
     .catch(() => res.sendStatus(401));
 };

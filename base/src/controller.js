@@ -54,4 +54,9 @@ async function search(req, res) {
   res.json(hits);
 }
 
-module.exports = { auth, updatePrograms, search };
+async function copyCollection(req, res) {
+  await firestore.copyCollection('transactions', 'requests');
+  res.sendStatus(200);
+}
+
+module.exports = { auth, updatePrograms, search, copyCollection };

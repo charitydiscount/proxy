@@ -3,7 +3,7 @@ const Firestore = require('@google-cloud/firestore');
 
 const db = new Firestore.Firestore({
   projectId: 'charitydiscount',
-  keyFilename: 'CharityDiscount.json'
+  keyFilename: 'CharityDiscount.json',
 });
 
 /**
@@ -58,7 +58,7 @@ async function updateProgramsGeneral(programs) {
     const docPrograms = programs.slice(index, index + batchSize);
     await db.collection('shops').add({
       batch: docPrograms,
-      createdAt: Firestore.FieldValue.serverTimestamp()
+      createdAt: Firestore.FieldValue.serverTimestamp(),
     });
   }
 }
@@ -66,7 +66,7 @@ async function updateProgramsGeneral(programs) {
 async function deleteDocsOfCollection(collection) {
   const fireBatch = db.batch();
   const docsToDelete = await db.collection(collection).listDocuments();
-  docsToDelete.forEach(doc => {
+  docsToDelete.forEach((doc) => {
     fireBatch.delete(doc);
   });
   return fireBatch.commit();
@@ -78,7 +78,7 @@ async function updateFavoritePrograms(programs) {
     return 0;
   }
 
-  favoritePrograms.forEach(f => {
+  favoritePrograms.forEach((f) => {
     // @ts-ignore
     const updateNeeded = f.data.programs.reduce((prev, favProgram) => {
       if (prev === true) {
@@ -97,12 +97,12 @@ async function updateFavoritePrograms(programs) {
       f.getDocumentReference().set(
         {
           // @ts-ignore
-          programs: f.data.programs.map(favProgram => {
+          programs: f.data.programs.map((favProgram) => {
             return {
               ...favProgram,
-              status: getProgramStatus(favProgram.uniqueCode, programs)
+              status: getProgramStatus(favProgram.uniqueCode, programs),
             };
-          })
+          }),
         },
         { merge: true }
       );
@@ -118,7 +118,7 @@ async function updateAffiliateMeta(auth) {
 }
 
 async function updateProgramsMeta(programs) {
-  const categories = programs.map(p => p.category);
+  const categories = programs.map((p) => p.category);
   const uniqueCategories = [...new Set(categories)];
   uniqueCategories.sort((c1, c2) => c1.localeCompare(c2));
 
@@ -128,14 +128,14 @@ async function updateProgramsMeta(programs) {
     .set(
       {
         count: programs.length,
-        categories: uniqueCategories
+        categories: uniqueCategories,
       },
       { merge: true }
     );
 }
 
 function getProgramStatus(uniqueCode, programs) {
-  const program = programs.find(p => p.uniqueCode === uniqueCode);
+  const program = programs.find((p) => p.uniqueCode === uniqueCode);
   if (program) {
     return program.status;
   } else {
@@ -143,4 +143,25 @@ function getProgramStatus(uniqueCode, programs) {
   }
 }
 
-module.exports = { updatePrograms, updateMeta };
+async function copyCollection(sourceCollection, targetCollection) {
+  const documents = await db.collection(sourceCollection).listDocuments();
+  const firestoreBatch = db.batch();
+  await asyncForEach(documents, async (doc) => {
+    const docSnapshot = await doc.get();
+    const docData = docSnapshot.data();
+    if (!('status' in docData)) {
+      return;
+    }
+    const newDocRef = db.collection(targetCollection).doc(docSnapshot.id);
+    firestoreBatch.set(newDocRef, docData);
+  });
+  await firestoreBatch.commit();
+}
+
+async function asyncForEach(array, callback) {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index]);
+  }
+}
+
+module.exports = { updatePrograms, updateMeta, copyCollection };

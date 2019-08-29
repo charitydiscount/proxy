@@ -9,8 +9,8 @@ const elastic = new Client({
   node: process.env.ENDPOINT,
   auth: {
     username: process.env.ELASTIC_USER,
-    password: process.env.ELASTIC_PASS
-  }
+    password: process.env.ELASTIC_PASS,
+  },
 });
 
 let authHeaders;
@@ -25,7 +25,7 @@ async function get2PAuthHeaders() {
 
   const reqHeaders = { 'Content-Type': 'application/json' };
   const reqBody = {
-    user: { email: process.env.TWOP_EMAIL, password: process.env.TWOP_PASS }
+    user: { email: process.env.TWOP_EMAIL, password: process.env.TWOP_PASS },
   };
 
   const twoPResponse = await fetch(
@@ -33,7 +33,7 @@ async function get2PAuthHeaders() {
     {
       method: 'post',
       headers: reqHeaders,
-      body: JSON.stringify(reqBody)
+      body: JSON.stringify(reqBody),
     }
   );
 
@@ -48,7 +48,7 @@ async function get2PAuthHeaders() {
     client: twoPResponse.headers.get('client'),
     uid: twoPResponse.headers.get('uid'),
     tokenType: twoPResponse.headers.get('token-type'),
-    uniqueCode: resBody.user.unique_code
+    uniqueCode: resBody.user.unique_code,
   };
   return authHeaders;
 }
@@ -85,11 +85,11 @@ async function get2PProgramsForPage(authData, page, perPage) {
     uid: authData.uid,
     'token-type': authData.tokenType,
     'Content-Type': 'application/json',
-    Accept: 'application/json'
+    Accept: 'application/json',
   };
   const twoPResponse = await fetch(url, {
     method: 'get',
-    headers
+    headers,
   });
 
   const respBody = await twoPResponse.json();
@@ -104,9 +104,9 @@ async function get2PProgramsForPage(authData, page, perPage) {
 async function updateSearchIndex(programs) {
   const flatMap = (f, arr) => arr.reduce((x, y) => [...x, ...f(y)], []);
   const bulkBody = flatMap(
-    program => [
+    (program) => [
       { index: { _index: process.env.INDEX_PROGRAMS, _id: program.id } },
-      program
+      program,
     ],
     programs
   );
@@ -115,7 +115,7 @@ async function updateSearchIndex(programs) {
     const { body: bulkResponse } = await elastic.bulk({
       // @ts-ignore
       refresh: true,
-      body: bulkBody
+      body: bulkBody,
     });
 
     if (bulkResponse.errors) {
@@ -127,7 +127,7 @@ async function updateSearchIndex(programs) {
             status: action[operation].status,
             error: action[operation].error,
             operation: bulkBody[i * 2],
-            document: bulkBody[i * 2 + 1]
+            document: bulkBody[i * 2 + 1],
           });
         }
       });
@@ -139,7 +139,7 @@ async function updateSearchIndex(programs) {
   }
 
   const { body: count } = await elastic.count({
-    index: process.env.INDEX_PROGRAMS
+    index: process.env.INDEX_PROGRAMS,
   });
   console.log(count);
 }
@@ -161,11 +161,11 @@ async function search(query, exact = false) {
         query: {
           [queryOperator]: {
             name: {
-              value: query
-            }
-          }
-        }
-      }
+              value: query,
+            },
+          },
+        },
+      },
     });
 
     return body.hits;
@@ -178,5 +178,5 @@ module.exports = {
   get2PAuthHeaders,
   get2PPrograms,
   updateSearchIndex,
-  search
+  search,
 };

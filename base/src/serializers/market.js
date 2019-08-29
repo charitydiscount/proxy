@@ -1,7 +1,7 @@
 function toMarket(json, source) {
   return {
     programs: getPrograms(json, source),
-    metadata: json.metadata
+    metadata: json.metadata,
   };
 }
 
@@ -10,7 +10,7 @@ function getPrograms(json, source) {
     return [];
   }
 
-  return json.programs.map(p => {
+  return json.programs.map((p) => {
     return {
       id: p.id,
       uniqueCode: p.unique_code,
@@ -24,7 +24,7 @@ function getPrograms(json, source) {
       currency: p.currency,
       category: p.category.name,
       status: p.status,
-      source: source
+      source: source,
     };
   });
 }

@@ -5,5 +5,6 @@ const controller = require('./src/controller');
 
 router.put('/programs', controller.updatePrograms);
 router.get('/search', controller.search);
+router.put('/_infra/copy-collection', controller.copyCollection);
 
 module.exports = router;
