@@ -15,7 +15,7 @@ export const updatePrograms = functions
   .schedule('* 6 * * 1')
   .timeZone('Europe/Bucharest')
   .onRun(async (context: any) => {
-    const programs = await twoPService.get2PPrograms();
+    const programs = await twoPService.getPrograms();
     programs.sort((p1, p2) => p1.name.localeCompare(p2.name));
 
     console.log(`Retrieved ${programs.length} programs`);

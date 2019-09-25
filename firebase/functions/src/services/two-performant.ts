@@ -3,11 +3,11 @@ const fetch = require('node-fetch').default;
 import marketConverter from '../serializers/market';
 
 export interface AuthHeaders {
-  accessToken: string,
-  client: string,
-  uid: string,
-  tokenType: string,
-  uniqueCode: string,
+  accessToken: string;
+  client: string;
+  uid: string;
+  tokenType: string;
+  uniqueCode: string;
 }
 
 export let authHeaders: AuthHeaders;
@@ -22,7 +22,7 @@ async function get2PAuthHeaders(): Promise<AuthHeaders> {
 
   const reqHeaders = { 'Content-Type': 'application/json' };
   const reqBody = {
-    user: { email: config().twop.email, password: config().twop.pass }
+    user: { email: config().twop.email, password: config().twop.pass },
   };
 
   const twoPResponse = await fetch(
@@ -30,7 +30,7 @@ async function get2PAuthHeaders(): Promise<AuthHeaders> {
     {
       method: 'post',
       headers: reqHeaders,
-      body: JSON.stringify(reqBody)
+      body: JSON.stringify(reqBody),
     }
   );
 
@@ -45,7 +45,7 @@ async function get2PAuthHeaders(): Promise<AuthHeaders> {
     client: twoPResponse.headers.get('client') || '',
     uid: twoPResponse.headers.get('uid') || '',
     tokenType: twoPResponse.headers.get('token-type') || '',
-    uniqueCode: resBody.user.unique_code
+    uniqueCode: resBody.user.unique_code,
   };
   return authHeaders;
 }
@@ -54,7 +54,7 @@ async function get2PAuthHeaders(): Promise<AuthHeaders> {
  * Get the 2Performant affiliate programs
  * @param {Object} auth
  */
-export async function get2PPrograms() {
+export async function getPrograms() {
   if (!authHeaders) {
     authHeaders = await get2PAuthHeaders();
   }
@@ -74,7 +74,33 @@ export async function get2PPrograms() {
   return programs;
 }
 
-async function get2PProgramsForPage(authData: AuthHeaders, page: Number, perPage: Number) {
+/**
+ * Get the 2Performant affiliate products
+ */
+export async function getProducts() {
+  if (!authHeaders) {
+    authHeaders = await get2PAuthHeaders();
+  }
+
+  // TODO
+}
+
+/**
+ * Get the 2Performant affiliate commissions
+ */
+export async function getCommissions() {
+  if (!authHeaders) {
+    authHeaders = await get2PAuthHeaders();
+  }
+
+  // TODO
+}
+
+async function get2PProgramsForPage(
+  authData: AuthHeaders,
+  page: Number,
+  perPage: Number
+) {
   const url = `https://api.2performant.com/affiliate/programs?filter[relation]=accepted&page=${page}&perpage=${perPage}`;
   const headers = {
     'access-token': authData.accessToken,
@@ -82,11 +108,11 @@ async function get2PProgramsForPage(authData: AuthHeaders, page: Number, perPage
     uid: authData.uid,
     'token-type': authData.tokenType,
     'Content-Type': 'application/json',
-    Accept: 'application/json'
+    Accept: 'application/json',
   };
   const twoPResponse = await fetch(url, {
     method: 'get',
-    headers
+    headers,
   });
 
   const respBody = await twoPResponse.json();
@@ -94,4 +120,4 @@ async function get2PProgramsForPage(authData: AuthHeaders, page: Number, perPage
   return marketConverter(respBody, '2p');
 }
 
-export default { get2PPrograms };
+export default { getPrograms, getProducts, getCommissions };
