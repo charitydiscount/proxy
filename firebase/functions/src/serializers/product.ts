@@ -1,3 +1,5 @@
+const camelcaseKeys = require('camelcase-keys');
+
 export interface ProductsResponse {
   products: Product[];
   metadata: Metadata;
@@ -57,4 +59,42 @@ export interface Product {
   structuredImageUrls: string[];
   url: string;
   description: string;
+}
+
+export interface ProductFeedsResponse {
+  productFeeds: ProductFeed[];
+  metadata: Metadata;
+}
+
+export interface Metadata {
+  pagination: Pagination;
+}
+
+export interface Pagination {
+  results: number;
+  pages: number;
+  currentPage: number;
+}
+
+export interface ProductFeed {
+  id: number;
+  updatedAt: Date;
+  help: string;
+  productsCount: number;
+  name: string;
+  program: Program;
+}
+
+export interface Program {
+  id: number;
+  name: string;
+  uniqueCode: string;
+}
+
+export function productFeedsFromJson(json: any): ProductFeedsResponse {
+  return camelcaseKeys(json, { deep: true });
+}
+
+export function productsFromJson(json: any): ProductsResponse {
+  return camelcaseKeys(json, { deep: true });
 }

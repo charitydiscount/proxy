@@ -5,7 +5,7 @@ import { config } from 'firebase-functions';
 
 const db = new Firestore.Firestore({
   projectId: 'charitydiscount',
-  keyFilename: 'CharityDiscount.json'
+  keyFilename: 'CharityDiscount.json',
 });
 
 /**
@@ -14,20 +14,13 @@ const db = new Firestore.Firestore({
  */
 export async function updatePrograms(programs: Program[]) {
   if (!Array.isArray(programs)) {
-    return null;
+    return;
   }
 
-  try {
-    await updateProgramsGeneral(programs);
-    await updateFavoritePrograms(programs);
-  } catch (e) {
-    console.log(e);
-    return 1;
-  }
+  await updateProgramsGeneral(programs);
+  await updateFavoritePrograms(programs);
 
   console.log(`Saved ${programs.length} programs`);
-
-  return 0;
 }
 
 /**
@@ -35,13 +28,11 @@ export async function updatePrograms(programs: Program[]) {
  */
 export async function updateMeta(auth: AuthHeaders, programs: Program[]) {
   if (!Array.isArray(programs)) {
-    return null;
+    return;
   }
 
   await updateAffiliateMeta(auth);
   await updateProgramsMeta(programs);
-
-  return 0;
 }
 
 async function updateProgramsGeneral(programs: Program[]) {
@@ -56,7 +47,7 @@ async function updateProgramsGeneral(programs: Program[]) {
     const docPrograms = programs.slice(index, index + batchSize);
     await db.collection('shops').add({
       batch: docPrograms,
-      createdAt: Firestore.FieldValue.serverTimestamp()
+      createdAt: Firestore.FieldValue.serverTimestamp(),
     });
   }
 }
@@ -95,14 +86,14 @@ async function updateFavoritePrograms(programs: Program[]) {
       f.getDocumentReference().set(
         {
           // @ts-ignore
-          programs: f.data.programs.map(favProgram => {
+          programs: f.data.programs.map((favProgram) => {
             return {
               ...favProgram,
-              status: getProgramStatus(favProgram.uniqueCode, programs)
+              status: getProgramStatus(favProgram.uniqueCode, programs),
             };
-          })
+          }),
         },
-        { merge: true }
+        { merge: true },
       );
     }
   });
@@ -116,7 +107,7 @@ async function updateAffiliateMeta(auth: AuthHeaders) {
 }
 
 async function updateProgramsMeta(programs: Program[]) {
-  const categories = programs.map(p => p.category);
+  const categories = programs.map((p) => p.category);
   const uniqueCategories = [...new Set(categories)];
   uniqueCategories.sort((c1, c2) => c1.localeCompare(c2));
 
@@ -126,14 +117,14 @@ async function updateProgramsMeta(programs: Program[]) {
     .set(
       {
         count: programs.length,
-        categories: uniqueCategories
+        categories: uniqueCategories,
       },
-      { merge: true }
+      { merge: true },
     );
 }
 
 function getProgramStatus(uniqueCode: string, programs: Program[]) {
-  const program = programs.find(p => p.uniqueCode === uniqueCode);
+  const program = programs.find((p) => p.uniqueCode === uniqueCode);
   if (program) {
     return program.status;
   } else {

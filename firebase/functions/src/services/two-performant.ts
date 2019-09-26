@@ -1,6 +1,14 @@
 import { config } from 'firebase-functions';
 const fetch = require('node-fetch').default;
 import marketConverter from '../serializers/market';
+import { commissionsFromJson, Commission } from '../serializers/commission';
+import {
+  productsFromJson,
+  productFeedsFromJson,
+  Product,
+  ProductFeed,
+} from '../serializers/product';
+import { asyncForEach } from '../util/helpers';
 
 export interface AuthHeaders {
   accessToken: string;
@@ -12,10 +20,12 @@ export interface AuthHeaders {
 
 export let authHeaders: AuthHeaders;
 
+const perPage = 50;
+
 /**
  * Retrieve the 2Performant authentication data
  */
-async function get2PAuthHeaders(): Promise<AuthHeaders> {
+async function getAuthHeaders(): Promise<AuthHeaders> {
   if (authHeaders) {
     return authHeaders;
   }
@@ -31,11 +41,11 @@ async function get2PAuthHeaders(): Promise<AuthHeaders> {
       method: 'post',
       headers: reqHeaders,
       body: JSON.stringify(reqBody),
-    }
+    },
   );
 
   if (!twoPResponse.ok) {
-    throw new Error('Failed auth request');
+    throw new Error(`Failed auth request: ${twoPResponse.statusText}`);
   }
 
   const resBody = await twoPResponse.json();
@@ -56,18 +66,17 @@ async function get2PAuthHeaders(): Promise<AuthHeaders> {
  */
 export async function getPrograms() {
   if (!authHeaders) {
-    authHeaders = await get2PAuthHeaders();
+    authHeaders = await getAuthHeaders();
   }
 
-  const perPage = 200;
-  let market = await get2PProgramsForPage(authHeaders, 1, perPage);
+  let market = await getProgramsForPage(authHeaders, 1, perPage);
   let programs = market.programs;
 
   const totalPages = market.metadata.pagination.pages;
-  const firstPage = market.metadata.pagination.current_page;
+  const firstPage = market.metadata.pagination.currentPage;
 
   for (let page = firstPage + 1; page <= totalPages; page++) {
-    market = await get2PProgramsForPage(authHeaders, page, perPage);
+    market = await getProgramsForPage(authHeaders, page, perPage);
     programs = programs.concat(market.programs);
   }
 
@@ -77,31 +86,142 @@ export async function getPrograms() {
 /**
  * Get the 2Performant affiliate products
  */
-export async function getProducts() {
-  if (!authHeaders) {
-    authHeaders = await get2PAuthHeaders();
-  }
+export async function getProducts(): Promise<Product[]> {
+  const productFeeds = (await getAllEntities(
+    getProductFeedsForPage,
+    'productFeeds',
+  )) as ProductFeed[];
 
-  // TODO
+  const mostProductsFeeds = productFeeds.reduce(
+    (acc, currentFeed, currentIndex, array) => {
+      const isNewProgram =
+        acc.find(
+          (feed) => feed.program.uniqueCode === currentFeed.program.uniqueCode,
+        ) === undefined;
+
+      if (isNewProgram) {
+        const feedWithMostProducts = array
+          .filter(
+            (feed) =>
+              feed.program.uniqueCode === currentFeed.program.uniqueCode,
+          )
+          .reduce((previousFeed, currentFeedForProgram) =>
+            previousFeed.productsCount > currentFeedForProgram.productsCount
+              ? previousFeed
+              : currentFeedForProgram,
+          );
+
+        return acc.concat([feedWithMostProducts]);
+      }
+      return acc;
+    },
+    <ProductFeed[]>[],
+  );
+
+  let products = <Product[]>[];
+
+  if (!authHeaders) {
+    authHeaders = await getAuthHeaders();
+  }
+  await asyncForEach(
+    mostProductsFeeds.slice(0, 10),
+    async (feed: ProductFeed) => {
+      const productsForFeed = await getProductsForPage(
+        authHeaders,
+        1,
+        40,
+        feed.id,
+      );
+      products = products.concat(productsForFeed.products);
+    },
+  );
+
+  return products;
 }
 
 /**
  * Get the 2Performant affiliate commissions
  */
-export async function getCommissions() {
-  if (!authHeaders) {
-    authHeaders = await get2PAuthHeaders();
-  }
-
-  // TODO
+export async function getCommissions(): Promise<Commission[]> {
+  const commissions = await getAllEntities(
+    getCommissionsForPage,
+    'commissions',
+  );
+  return commissions;
 }
 
-async function get2PProgramsForPage(
+async function getAllEntities(
+  pageRetriever: Function,
+  relevantKey: string,
+): Promise<any[]> {
+  if (!authHeaders) {
+    authHeaders = await getAuthHeaders();
+  }
+
+  let responseForPage = await pageRetriever(authHeaders, 1, perPage);
+  let entities = responseForPage[relevantKey];
+
+  const totalPages = responseForPage.metadata.pagination.pages;
+  const firstPage = responseForPage.metadata.pagination.currentPage;
+
+  for (let page = firstPage + 1; page <= totalPages; page++) {
+    responseForPage = await pageRetriever(authHeaders, page, perPage);
+    entities = entities.concat(responseForPage[relevantKey]);
+  }
+
+  return entities;
+}
+
+async function getProgramsForPage(
   authData: AuthHeaders,
-  page: Number,
-  perPage: Number
+  page: number,
+  perPage: number,
 ) {
   const url = `https://api.2performant.com/affiliate/programs?filter[relation]=accepted&page=${page}&perpage=${perPage}`;
+  const twoPResponse = await fetchTwoP(url, authData);
+  const respBody = await twoPResponse.json();
+
+  return marketConverter(respBody, '2p');
+}
+
+async function getProductFeedsForPage(
+  authData: AuthHeaders,
+  page: number,
+  perPage: number,
+) {
+  const url = `https://api.2performant.com/affiliate/product_feeds?page=${page}&perpage=${perPage}`;
+  const twoPResponse = await fetchTwoP(url, authData);
+  const respBody = await twoPResponse.json();
+
+  return productFeedsFromJson(respBody);
+}
+
+async function getProductsForPage(
+  authData: AuthHeaders,
+  page: number,
+  perPage: number,
+  productFeed: number,
+) {
+  const url = `https://api.2performant.com/affiliate/product_feeds/${productFeed}/products?page=${page}&perpage=${perPage}`;
+  const twoPResponse = await fetchTwoP(url, authData);
+  const respBody = await twoPResponse.json();
+
+  return productsFromJson(respBody);
+}
+
+async function getCommissionsForPage(
+  authData: AuthHeaders,
+  page: number,
+  perPage: number,
+) {
+  const url = `https://api.2performant.com/affiliate/commissions?page=${page}&perpage=${perPage}`;
+  const twoPResponse = await fetchTwoP(url, authData);
+  const respBody = await twoPResponse.json();
+
+  return commissionsFromJson(respBody);
+}
+
+function fetchTwoP(url: string, authData: AuthHeaders): Promise<any> {
   const headers = {
     'access-token': authData.accessToken,
     client: authData.client,
@@ -110,14 +230,10 @@ async function get2PProgramsForPage(
     'Content-Type': 'application/json',
     Accept: 'application/json',
   };
-  const twoPResponse = await fetch(url, {
+  return fetch(url, {
     method: 'get',
     headers,
   });
-
-  const respBody = await twoPResponse.json();
-
-  return marketConverter(respBody, '2p');
 }
 
 export default { getPrograms, getProducts, getCommissions };

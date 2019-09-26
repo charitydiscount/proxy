@@ -1,31 +1,36 @@
+const camelcaseKeys = require('camelcase-keys');
+
 export interface Program {
-  id: number,
-  uniqueCode: string,
-  name: string,
-  logoPath: string,
-  mainUrl: string,
-  defaultLeadCommissionAmount: number,
-  defaultLeadCommissionType: string,
-  defaultSaleCommissionRate: number,
-  defaultSaleCommissionType: string,
-  currency: string,
-  category: string,
-  status: string,
-  source: string,
+  id: number;
+  uniqueCode: string;
+  name: string;
+  logoPath: string;
+  mainUrl: string;
+  defaultLeadCommissionAmount: number;
+  defaultLeadCommissionType: string;
+  defaultSaleCommissionRate: number;
+  defaultSaleCommissionType: string;
+  currency: string;
+  category: string;
+  status: string;
+  source: string;
 }
 
 interface Metadata {
   pagination: {
-    results: number,
-    pages: number,
-    current_page: number
-  }
+    results: number;
+    pages: number;
+    currentPage: number;
+  };
 }
 
-function toMarket(json: any, source: string): { programs: Program[], metadata: Metadata } {
+function toMarket(
+  json: any,
+  source: string,
+): { programs: Program[]; metadata: Metadata } {
   return {
     programs: getPrograms(json, source),
-    metadata: json.metadata
+    metadata: camelcaseKeys(json.metadata, { deep: true }),
   };
 }
 
@@ -48,7 +53,7 @@ function getPrograms(json: any, source: string): Program[] {
       currency: p.currency,
       category: p.category.name,
       status: p.status,
-      source: source
+      source: source,
     };
   });
 }

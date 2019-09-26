@@ -1,3 +1,5 @@
+const camelcaseKeys = require('camelcase-keys');
+
 export interface CommissionsResponse {
   commissions: Commission[];
   metadata: Metadata;
@@ -92,4 +94,8 @@ export interface Totals {
   amount: string;
   transactionAmount: null;
   results: number;
+}
+
+export function commissionsFromJson(json: any): CommissionsResponse {
+  return camelcaseKeys(json, { deep: true });
 }
