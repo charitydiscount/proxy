@@ -20,7 +20,7 @@ export interface AuthHeaders {
 
 export let authHeaders: AuthHeaders;
 
-const perPage = 50;
+const itemsPerPage = 40;
 
 /**
  * Retrieve the 2Performant authentication data
@@ -62,21 +62,21 @@ async function getAuthHeaders(): Promise<AuthHeaders> {
 
 /**
  * Get the 2Performant affiliate programs
- * @param {Object} auth
+ * @param {object} auth
  */
 export async function getPrograms() {
   if (!authHeaders) {
     authHeaders = await getAuthHeaders();
   }
 
-  let market = await getProgramsForPage(authHeaders, 1, perPage);
+  let market = await getProgramsForPage(authHeaders, 1, itemsPerPage);
   let programs = market.programs;
 
   const totalPages = market.metadata.pagination.pages;
   const firstPage = market.metadata.pagination.currentPage;
 
   for (let page = firstPage + 1; page <= totalPages; page++) {
-    market = await getProgramsForPage(authHeaders, page, perPage);
+    market = await getProgramsForPage(authHeaders, page, itemsPerPage);
     programs = programs.concat(market.programs);
   }
 
@@ -129,7 +129,7 @@ export async function getProducts(): Promise<Product[]> {
       const productsForFeed = await getProductsForPage(
         authHeaders,
         1,
-        40,
+        itemsPerPage,
         feed.id,
       );
       products = products.concat(productsForFeed.products);
@@ -146,6 +146,7 @@ export async function getCommissions(): Promise<Commission[]> {
   const commissions = await getAllEntities(
     getCommissionsForPage,
     'commissions',
+    '&filter[status]=pending&sort[date]=desc',
   );
   return commissions;
 }
@@ -153,19 +154,30 @@ export async function getCommissions(): Promise<Commission[]> {
 async function getAllEntities(
   pageRetriever: Function,
   relevantKey: string,
+  params: string | undefined = undefined,
 ): Promise<any[]> {
   if (!authHeaders) {
     authHeaders = await getAuthHeaders();
   }
 
-  let responseForPage = await pageRetriever(authHeaders, 1, perPage);
+  let responseForPage = await pageRetriever(
+    authHeaders,
+    1,
+    itemsPerPage,
+    params,
+  );
   let entities = responseForPage[relevantKey];
 
   const totalPages = responseForPage.metadata.pagination.pages;
   const firstPage = responseForPage.metadata.pagination.currentPage;
 
   for (let page = firstPage + 1; page <= totalPages; page++) {
-    responseForPage = await pageRetriever(authHeaders, page, perPage);
+    responseForPage = await pageRetriever(
+      authHeaders,
+      page,
+      itemsPerPage,
+      params,
+    );
     entities = entities.concat(responseForPage[relevantKey]);
   }
 
@@ -213,8 +225,9 @@ async function getCommissionsForPage(
   authData: AuthHeaders,
   page: number,
   perPage: number,
+  params: string,
 ) {
-  const url = `https://api.2performant.com/affiliate/commissions?page=${page}&perpage=${perPage}`;
+  const url = `https://api.2performant.com/affiliate/commissions?page=${page}&perpage=${perPage}${params}`;
   const twoPResponse = await fetchTwoP(url, authData);
   const respBody = await twoPResponse.json();
 

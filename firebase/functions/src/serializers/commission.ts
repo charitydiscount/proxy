@@ -7,7 +7,7 @@ export interface CommissionsResponse {
 
 export interface Commission {
   id: number;
-  userID: number;
+  userId: number;
   actionid: number;
   amount: string;
   status: string;
@@ -19,7 +19,7 @@ export interface Commission {
   history: null;
   currency: string;
   workingCurrencyCode: string;
-  programID: number;
+  programId: number;
   registeredInBudgetLock: boolean;
   amountInWorkingCurrency: string;
   actiontype: string;
@@ -43,14 +43,14 @@ export interface PublicActionData {
   rate: null;
   amount: null;
   adType: string;
-  adID: string;
-  sourceIP: string;
+  adId: string;
+  sourceIp: string;
   description: string;
 }
 
 export interface PublicClickData {
   createdAt: Date;
-  sourceIP: string;
+  sourceIp: string;
   url: string;
   redirectTo: string;
   statsTags: string;

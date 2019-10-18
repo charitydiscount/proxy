@@ -2,17 +2,18 @@ import * as functions from 'firebase-functions';
 import twoPService, { authHeaders } from './services/two-performant';
 import firestoreService from './services/firestore';
 import elasticService from './services/elastic';
-import { Commission } from './serializers/commission';
 
 const runtimeOpts = {
   timeoutSeconds: 300,
-  memory: '256MB',
+  memory: functions.VALID_MEMORY_OPTIONS[1],
 };
 
-export const updatePrograms = functions
-  //@ts-ignore
-  .runWith(runtimeOpts)
-  .pubsub.schedule('* 6 * * 1')
+function getFunction() {
+  return functions.runWith(runtimeOpts).region('europe-west1');
+}
+
+export const updatePrograms = getFunction()
+  .pubsub.schedule('every monday 06:00')
   .timeZone('Europe/Bucharest')
   .onRun(async (context: any) => {
     const programs = await twoPService.getPrograms();
@@ -31,14 +32,35 @@ export const updatePrograms = functions
     );
   });
 
-export const updateCommissions = functions.https.onRequest(async (req, res) => {
-  let commissions: Commission[] = [];
-  try {
-    commissions = await twoPService.getCommissions();
-  } catch (error) {
-    console.log(error.message);
-    res.status(500).send(error.message);
-  }
+export const updateCommissions = getFunction()
+  .pubsub.schedule('every 24 hours')
+  .timeZone('Europe/Bucharest')
+  .onRun(async (context: any) => {
+    try {
+      const commissions = await twoPService.getCommissions();
+      return firestoreService
+        .updateCommissions(commissions)
+        .catch((e) => console.log(e.message));
+    } catch (error) {
+      console.log(error.message);
+      return;
+    }
+  });
 
-  return commissions;
-});
+export const updateProducts = getFunction()
+  .pubsub.schedule('every 24 hours')
+  .timeZone('Europe/Bucharest')
+  .onRun(async (context: any) => {
+    try {
+      const products = await twoPService.getProducts();
+      console.log(`Retrieved ${products.length} products`);
+      const updatePromises = [elasticService.updateProductsIndex(products)];
+
+      return Promise.all(updatePromises).catch((e: Error) =>
+        console.log(e.message),
+      );
+    } catch (error) {
+      console.log(error.message);
+      return;
+    }
+  });

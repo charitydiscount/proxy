@@ -1,7 +1,9 @@
-const Firestore = require('@google-cloud/firestore');
+import Firestore = require('@google-cloud/firestore');
 import { Program } from '../serializers/market';
 import { AuthHeaders } from './two-performant';
 import { config } from 'firebase-functions';
+import { Commission } from '../serializers/commission';
+import { FieldValue } from '@google-cloud/firestore';
 
 const db = new Firestore.Firestore({
   projectId: 'charitydiscount',
@@ -10,7 +12,7 @@ const db = new Firestore.Firestore({
 
 /**
  * Update the stored programs
- * @param {Object[]} programs
+ * @param {object[]} programs
  */
 export async function updatePrograms(programs: Program[]) {
   if (!Array.isArray(programs)) {
@@ -50,6 +52,85 @@ async function updateProgramsGeneral(programs: Program[]) {
       createdAt: Firestore.FieldValue.serverTimestamp(),
     });
   }
+}
+
+/**
+ * Update the commissions
+ * @param commissions
+ */
+export async function updateCommissions(commissions: Commission[]) {
+  if (!Array.isArray(commissions)) {
+    return;
+  }
+
+  const userCommissions: { [userId: string]: Commission[] } = {};
+  commissions.forEach((userCommission) =>
+    addUserCommission(userCommissions, userCommission),
+  );
+
+  const promises: Promise<any>[] = [];
+
+  for (const userId in userCommissions) {
+    const transactions = userCommissions[userId].map((userCommission) =>
+      getFirestoreCommission(userCommission),
+    );
+    promises.push(
+      db
+        .collection('commissions')
+        .doc(userId)
+        .set(
+          {
+            userId,
+            transactions: FieldValue.arrayUnion(...transactions),
+          },
+          { merge: true },
+        ),
+    );
+  }
+
+  return promises;
+}
+
+interface FirestoreCommission {
+  amount: number;
+  createdAt: Firestore.Timestamp;
+  currency: string;
+  shopId: number;
+  status: string;
+  originId: number;
+}
+
+function getFirestoreCommission(commission: Commission): FirestoreCommission {
+  return {
+    amount: Number.parseFloat(commission.amountInWorkingCurrency),
+    createdAt: Firestore.Timestamp.fromDate(commission.createdAt),
+    currency: commission.workingCurrencyCode,
+    shopId: commission.programId,
+    status: commission.status,
+    originId: commission.id,
+  };
+}
+
+function addUserCommission(
+  target: { [userId: string]: Commission[] },
+  commission: Commission,
+) {
+  const userId = getUserForCommission(commission);
+  if (target.hasOwnProperty(userId)) {
+    target[userId].push(commission);
+  } else {
+    target[userId] = [commission];
+  }
+
+  return target;
+}
+
+function getUserForCommission(commission: Commission) {
+  if (commission.statsTags.length === 0) {
+    return '';
+  }
+
+  return commission.statsTags.slice(1, commission.statsTags.length - 1);
 }
 
 async function deleteDocsOfCollection(collection: string) {
@@ -132,4 +213,4 @@ function getProgramStatus(uniqueCode: string, programs: Program[]) {
   }
 }
 
-export default { updatePrograms, updateMeta };
+export default { updatePrograms, updateMeta, updateCommissions };
