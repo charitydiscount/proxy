@@ -1,6 +1,5 @@
 import Firestore = require('@google-cloud/firestore');
 import { Program } from '../serializers/market';
-import { AuthHeaders } from './two-performant';
 import { config } from 'firebase-functions';
 import { Commission } from '../serializers/commission';
 import { FieldValue } from '@google-cloud/firestore';
@@ -28,12 +27,12 @@ export async function updatePrograms(programs: Program[]) {
 /**
  * Update the overall metrics
  */
-export async function updateMeta(auth: AuthHeaders, programs: Program[]) {
+export async function updateMeta(uniqueCode: string, programs: Program[]) {
   if (!Array.isArray(programs)) {
     return;
   }
 
-  await updateAffiliateMeta(auth);
+  await updateAffiliateMeta(uniqueCode);
   await updateProgramsMeta(programs);
 }
 
@@ -103,7 +102,7 @@ interface FirestoreCommission {
 function getFirestoreCommission(commission: Commission): FirestoreCommission {
   return {
     amount: Number.parseFloat(commission.amountInWorkingCurrency),
-    createdAt: Firestore.Timestamp.fromDate(commission.createdAt),
+    createdAt: Firestore.Timestamp.fromMillis(Date.parse(commission.createdAt)),
     currency: commission.workingCurrencyCode,
     shopId: commission.programId,
     status: commission.status,
@@ -180,11 +179,11 @@ async function updateFavoritePrograms(programs: Program[]) {
   });
 }
 
-async function updateAffiliateMeta(auth: AuthHeaders) {
+async function updateAffiliateMeta(uniqueCode: string) {
   return db
     .collection('meta')
     .doc('2performant')
-    .set({ uniqueCode: auth.uniqueCode }, { merge: true });
+    .set({ uniqueCode: uniqueCode }, { merge: true });
 }
 
 async function updateProgramsMeta(programs: Program[]) {

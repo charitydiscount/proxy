@@ -12,8 +12,8 @@ export interface Commission {
   amount: string;
   status: string;
   description: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   reason: null;
   statsTags: string;
   history: null;

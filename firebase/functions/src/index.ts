@@ -3,12 +3,13 @@ import twoPService, { authHeaders } from './services/two-performant';
 import firestoreService from './services/firestore';
 import elasticService from './services/elastic';
 
-const runtimeOpts = {
-  timeoutSeconds: 300,
-  memory: functions.VALID_MEMORY_OPTIONS[1],
-};
-
-function getFunction() {
+function getFunction(
+  timeoutSeconds: number = 300,
+  memory = functions.VALID_MEMORY_OPTIONS[1]) {
+  const runtimeOpts = {
+    timeoutSeconds,
+    memory,
+  }
   return functions.runWith(runtimeOpts).region('europe-west1');
 }
 
@@ -23,7 +24,7 @@ export const updatePrograms = getFunction()
 
     const updatePromises = [
       firestoreService.updatePrograms(programs),
-      firestoreService.updateMeta(authHeaders, programs),
+      firestoreService.updateMeta(authHeaders.uniqueCode, programs),
       elasticService.updateProgramsIndex(programs),
     ];
 
@@ -32,7 +33,7 @@ export const updatePrograms = getFunction()
     );
   });
 
-export const updateCommissions = getFunction()
+export const updateCommissions = getFunction(540)
   .pubsub.schedule('every 24 hours')
   .timeZone('Europe/Bucharest')
   .onRun(async (context: any) => {
