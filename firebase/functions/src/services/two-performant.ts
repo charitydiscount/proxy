@@ -1,7 +1,11 @@
 import { config } from 'firebase-functions';
 const fetch = require('node-fetch').default;
 import marketConverter from '../serializers/market';
-import { commissionsFromJson, Commission } from '../serializers/commission';
+import {
+  commissionsFromJson,
+  Commission,
+  CommissionsResponse,
+} from '../serializers/commission';
 import {
   productsFromJson,
   productFeedsFromJson,
@@ -142,11 +146,47 @@ export async function getProducts(): Promise<Product[]> {
 /**
  * Get the 2Performant affiliate commissions
  */
-export async function getCommissions(): Promise<Commission[]> {
+export async function getPendingCommissions(): Promise<Commission[]> {
   const commissions = await getAllEntities(
     getCommissionsForPage,
     'commissions',
     '&filter[status]=pending&sort[date]=desc',
+  );
+  commissions.push(
+    ...(await getAllEntities(
+      getCommissionsForPage,
+      'commissions',
+      'filter[status]=accepted&sort[date]=desc',
+    )),
+  );
+  return commissions;
+}
+
+export async function getFinalCommissions(
+  lastPaidCommission: Commission | undefined = undefined,
+  lastRejectedCommission: Commission | undefined = undefined,
+): Promise<Commission[]> {
+  const commissions = await getAllEntities(
+    getCommissionsForPage,
+    'commissions',
+    '&filter[status]=paid&sort[date]=desc',
+    (pageResponse: CommissionsResponse) =>
+      lastPaidCommission !== undefined &&
+      !!pageResponse.commissions.find(
+        (comm) => comm.id === lastPaidCommission.id,
+      ),
+  );
+  commissions.push(
+    ...(await getAllEntities(
+      getCommissionsForPage,
+      'commissions',
+      '&filter[status]=rejected&sort[date]=desc',
+      (pageResponse: CommissionsResponse) =>
+        lastRejectedCommission !== undefined &&
+        !!pageResponse.commissions.find(
+          (comm) => comm.id === lastRejectedCommission.id,
+        ),
+    )),
   );
   return commissions;
 }
@@ -155,6 +195,7 @@ async function getAllEntities(
   pageRetriever: Function,
   relevantKey: string,
   params: string | undefined = undefined,
+  stopWhen: Function | undefined = undefined,
 ): Promise<any[]> {
   if (!authHeaders) {
     authHeaders = await getAuthHeaders();
@@ -168,6 +209,10 @@ async function getAllEntities(
   );
   let entities = responseForPage[relevantKey];
 
+  if (stopWhen !== undefined && stopWhen(responseForPage) === true) {
+    return entities;
+  }
+
   const totalPages = responseForPage.metadata.pagination.pages;
   const firstPage = responseForPage.metadata.pagination.currentPage;
 
@@ -179,6 +224,9 @@ async function getAllEntities(
       params,
     );
     entities = entities.concat(responseForPage[relevantKey]);
+    if (stopWhen !== undefined && stopWhen(responseForPage) === true) {
+      break;
+    }
   }
 
   return entities;
@@ -249,4 +297,9 @@ function fetchTwoP(url: string, authData: AuthHeaders): Promise<any> {
   });
 }
 
-export default { getPrograms, getProducts, getCommissions };
+export default {
+  getPrograms,
+  getProducts,
+  getPendingCommissions,
+  getFinalCommissions,
+};

@@ -5,11 +5,12 @@ import elasticService from './services/elastic';
 
 function getFunction(
   timeoutSeconds: number = 300,
-  memory = functions.VALID_MEMORY_OPTIONS[1]) {
+  memory = functions.VALID_MEMORY_OPTIONS[1],
+) {
   const runtimeOpts = {
     timeoutSeconds,
     memory,
-  }
+  };
   return functions.runWith(runtimeOpts).region('europe-west1');
 }
 
@@ -38,7 +39,7 @@ export const updateCommissions = getFunction(540)
   .timeZone('Europe/Bucharest')
   .onRun(async (context: any) => {
     try {
-      const commissions = await twoPService.getCommissions();
+      const commissions = await twoPService.getPendingCommissions();
       return firestoreService
         .updateCommissions(commissions)
         .catch((e) => console.log(e.message));

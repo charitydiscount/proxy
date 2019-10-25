@@ -14,8 +14,8 @@ export interface Commission {
   description: string;
   createdAt: string;
   updatedAt: string;
-  reason: null;
-  statsTags: string;
+  reason: null | string[];
+  statsTags: string | null;
   history: null;
   currency: string;
   workingCurrencyCode: string;
@@ -38,8 +38,8 @@ export interface CommissionProgram {
 }
 
 export interface PublicActionData {
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   rate: null;
   amount: null;
   adType: string;
@@ -49,11 +49,11 @@ export interface PublicActionData {
 }
 
 export interface PublicClickData {
-  createdAt: Date;
+  createdAt: string;
   sourceIp: string;
   url: string;
   redirectTo: string;
-  statsTags: string;
+  statsTags: string | null;
   deviceType: string;
 }
 
