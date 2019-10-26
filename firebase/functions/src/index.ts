@@ -1,7 +1,8 @@
 import * as functions from 'firebase-functions';
-import twoPService, { authHeaders } from './services/two-performant';
-import firestoreService from './services/firestore';
+import twoPService from './services/two-performant';
+import * as firestoreService from './services/firestore';
 import elasticService from './services/elastic';
+import * as controller from './controllers';
 
 function getFunction(
   timeoutSeconds: number = 300,
@@ -18,14 +19,14 @@ export const updatePrograms = getFunction()
   .pubsub.schedule('every monday 06:00')
   .timeZone('Europe/Bucharest')
   .onRun(async (context: any) => {
-    const programs = await twoPService.getPrograms();
-    programs.sort((p1, p2) => p1.name.localeCompare(p2.name));
+    const programs = await controller.getPrograms();
 
     console.log(`Retrieved ${programs.length} programs`);
 
+    const twoPCode = controller.getAffiliateCodes()[0].code;
     const updatePromises = [
       firestoreService.updatePrograms(programs),
-      firestoreService.updateMeta(authHeaders.uniqueCode, programs),
+      firestoreService.updateMeta(twoPCode, programs),
       elasticService.updateProgramsIndex(programs),
     ];
 
@@ -37,16 +38,8 @@ export const updatePrograms = getFunction()
 export const updateCommissions = getFunction(540)
   .pubsub.schedule('every 24 hours')
   .timeZone('Europe/Bucharest')
-  .onRun(async (context: any) => {
-    try {
-      const commissions = await twoPService.getPendingCommissions();
-      return firestoreService
-        .updateCommissions(commissions)
-        .catch((e) => console.log(e.message));
-    } catch (error) {
-      console.log(error.message);
-      return;
-    }
+  .onRun((context: any) => {
+    return controller.updateCommissions();
   });
 
 export const updateProducts = getFunction()

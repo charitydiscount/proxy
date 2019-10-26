@@ -1,6 +1,6 @@
 import { Client } from '@elastic/elasticsearch';
 import { config } from 'firebase-functions';
-import { Program } from '../serializers/market';
+import { Program } from '../entities';
 import { flatMap } from '../util/helpers';
 import { Product } from '../serializers/product';
 

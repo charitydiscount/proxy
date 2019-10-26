@@ -1,4 +1,4 @@
-import { Program } from "../serializers/market";
+import { Program } from "../serializers/program";
 import { Commission } from "../serializers/commission";
 
 interface AffiliateService {

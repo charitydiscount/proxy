@@ -1,4 +1,4 @@
-const camelcaseKeys = require('camelcase-keys');
+import camelcaseKeys = require('camelcase-keys');
 
 export interface ProductsResponse {
   products: Product[];
@@ -92,9 +92,11 @@ export interface Program {
 }
 
 export function productFeedsFromJson(json: any): ProductFeedsResponse {
+  //@ts-ignore
   return camelcaseKeys(json, { deep: true });
 }
 
 export function productsFromJson(json: any): ProductsResponse {
+  //@ts-ignore
   return camelcaseKeys(json, { deep: true });
 }

@@ -15,7 +15,8 @@
   "main": "lib/index.js",
   "dependencies": {
     "@elastic/elasticsearch": "^7.4.0",
-    "@google-cloud/firestore": "^2.4.0",
+    "@google-cloud/firestore": "^2.5.0",
+    "@types/node-fetch": "^2.5.2",
     "camelcase-keys": "^6.1.0",
     "firebase-admin": "^8.6.1",
     "firebase-functions": "^3.3.0",

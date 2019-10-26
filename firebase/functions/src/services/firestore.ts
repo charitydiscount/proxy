@@ -1,8 +1,8 @@
 import Firestore = require('@google-cloud/firestore');
-import { Program } from '../serializers/market';
 import { config } from 'firebase-functions';
-import { Commission } from '../serializers/commission';
 import { FieldValue } from '@google-cloud/firestore';
+import * as entity from '../entities';
+import { Commission, toCommissionEntity } from '../serializers/commission';
 
 const db = new Firestore.Firestore({
   projectId: 'charitydiscount',
@@ -13,7 +13,7 @@ const db = new Firestore.Firestore({
  * Update the stored programs
  * @param {object[]} programs
  */
-export async function updatePrograms(programs: Program[]) {
+export async function updatePrograms(programs: entity.Program[]) {
   if (!Array.isArray(programs)) {
     return;
   }
@@ -27,7 +27,10 @@ export async function updatePrograms(programs: Program[]) {
 /**
  * Update the overall metrics
  */
-export async function updateMeta(uniqueCode: string, programs: Program[]) {
+export async function updateMeta(
+  uniqueCode: string,
+  programs: entity.Program[],
+) {
   if (!Array.isArray(programs)) {
     return;
   }
@@ -36,7 +39,7 @@ export async function updateMeta(uniqueCode: string, programs: Program[]) {
   await updateProgramsMeta(programs);
 }
 
-async function updateProgramsGeneral(programs: Program[]) {
+async function updateProgramsGeneral(programs: entity.Program[]) {
   try {
     await deleteDocsOfCollection('shops');
   } catch (e) {
@@ -70,8 +73,8 @@ export async function updateCommissions(commissions: Commission[]) {
   const promises: Promise<any>[] = [];
 
   for (const userId in userCommissions) {
-    const transactions = userCommissions[userId].map((userCommission) =>
-      getFirestoreCommission(userCommission),
+    const transactions: entity.Commission[] = userCommissions[userId].map(
+      (userComm) => toCommissionEntity(userComm),
     );
     promises.push(
       db
@@ -90,25 +93,25 @@ export async function updateCommissions(commissions: Commission[]) {
   return promises;
 }
 
-interface FirestoreCommission {
-  amount: number;
-  createdAt: Firestore.Timestamp;
-  currency: string;
-  shopId: number;
-  status: string;
-  originId: number;
-}
+export const getLastFinalCommissions = async (
+  userId: string,
+  status: string,
+): Promise<entity.Commission | null> => {
+  const commissionsSnap = await db
+    .collection('commissions')
+    .doc(userId)
+    .get();
+  if (!commissionsSnap.exists) {
+    return null;
+  }
 
-function getFirestoreCommission(commission: Commission): FirestoreCommission {
-  return {
-    amount: Number.parseFloat(commission.amountInWorkingCurrency),
-    createdAt: Firestore.Timestamp.fromMillis(Date.parse(commission.createdAt)),
-    currency: commission.workingCurrencyCode,
-    shopId: commission.programId,
-    status: commission.status,
-    originId: commission.id,
-  };
-}
+  const userCommissions: entity.Commission[] = commissionsSnap.data()!
+    .transactions;
+
+  return (
+    userCommissions.find((commission) => commission.status === status) || null
+  );
+};
 
 function addUserCommission(
   target: { [userId: string]: Commission[] },
@@ -125,11 +128,11 @@ function addUserCommission(
 }
 
 function getUserForCommission(commission: Commission) {
-  if (!commission.statsTags || commission.statsTags!.length === 0) {
+  if (!commission.statsTags || commission.statsTags.length === 0) {
     return '';
   }
 
-  return commission.statsTags!.slice(1, commission.statsTags!.length - 1);
+  return commission.statsTags.slice(1, commission.statsTags.length - 1);
 }
 
 async function deleteDocsOfCollection(collection: string) {
@@ -141,7 +144,7 @@ async function deleteDocsOfCollection(collection: string) {
   return fireBatch.commit();
 }
 
-async function updateFavoritePrograms(programs: Program[]) {
+async function updateFavoritePrograms(programs: entity.Program[]) {
   const favoritePrograms = await db.collection('favoritePrograms').get();
   if (favoritePrograms.empty) {
     return;
@@ -186,7 +189,7 @@ async function updateAffiliateMeta(uniqueCode: string) {
     .set({ uniqueCode: uniqueCode }, { merge: true });
 }
 
-async function updateProgramsMeta(programs: Program[]) {
+async function updateProgramsMeta(programs: entity.Program[]) {
   const categories = programs.map((p) => p.category);
   const uniqueCategories = [...new Set(categories)];
   uniqueCategories.sort((c1, c2) => c1.localeCompare(c2));
@@ -203,7 +206,7 @@ async function updateProgramsMeta(programs: Program[]) {
     );
 }
 
-function getProgramStatus(uniqueCode: string, programs: Program[]) {
+function getProgramStatus(uniqueCode: string, programs: entity.Program[]) {
   const program = programs.find((p) => p.uniqueCode === uniqueCode);
   if (program) {
     return program.status;
@@ -211,5 +214,3 @@ function getProgramStatus(uniqueCode: string, programs: Program[]) {
     return 'removed';
   }
 }
-
-export default { updatePrograms, updateMeta, updateCommissions };

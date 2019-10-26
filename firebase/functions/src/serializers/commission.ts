@@ -1,4 +1,6 @@
-const camelcaseKeys = require('camelcase-keys');
+import camelcaseKeys = require('camelcase-keys');
+import * as entity from '../entities';
+import Firestore = require('@google-cloud/firestore');
 
 export interface CommissionsResponse {
   commissions: Commission[];
@@ -96,6 +98,18 @@ export interface Totals {
   results: number;
 }
 
-export function commissionsFromJson(json: any): CommissionsResponse {
+export const commissionsFromJson = (json: any): CommissionsResponse => {
+  //@ts-ignore
   return camelcaseKeys(json, { deep: true });
-}
+};
+
+export const toCommissionEntity = (comm: Commission): entity.Commission => {
+  return {
+    amount: Number.parseFloat(comm.amountInWorkingCurrency),
+    createdAt: Firestore.Timestamp.fromMillis(Date.parse(comm.createdAt)),
+    currency: comm.workingCurrencyCode,
+    shopId: comm.programId,
+    status: comm.status,
+    originId: comm.id,
+  };
+};

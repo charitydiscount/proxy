@@ -1,6 +1,5 @@
 import { config } from 'firebase-functions';
-const fetch = require('node-fetch').default;
-import marketConverter from '../serializers/market';
+import fetch = require('node-fetch');
 import {
   commissionsFromJson,
   Commission,
@@ -12,7 +11,8 @@ import {
   Product,
   ProductFeed,
 } from '../serializers/product';
-import { asyncForEach } from '../util/helpers';
+import { asyncForEach, sleep } from '../util/helpers';
+import { programsFromJson } from '../serializers/program';
 
 export interface AuthHeaders {
   accessToken: string;
@@ -39,7 +39,7 @@ async function getAuthHeaders(): Promise<AuthHeaders> {
     user: { email: config().twop.email, password: config().twop.pass },
   };
 
-  const twoPResponse = await fetch(
+  const twoPResponse = await fetch.default(
     'https://api.2performant.com/users/sign_in',
     {
       method: 'post',
@@ -84,6 +84,7 @@ export async function getPrograms() {
     programs = programs.concat(market.programs);
   }
 
+  // programs.forEach((p) => (p.source = '2p'));
   return programs;
 }
 
@@ -241,7 +242,7 @@ async function getProgramsForPage(
   const twoPResponse = await fetchTwoP(url, authData);
   const respBody = await twoPResponse.json();
 
-  return marketConverter(respBody, '2p');
+  return programsFromJson(respBody);
 }
 
 async function getProductFeedsForPage(
@@ -274,15 +275,19 @@ async function getCommissionsForPage(
   page: number,
   perPage: number,
   params: string,
-) {
+): Promise<CommissionsResponse> {
   const url = `https://api.2performant.com/affiliate/commissions?page=${page}&perpage=${perPage}${params}`;
   const twoPResponse = await fetchTwoP(url, authData);
-  const respBody = await twoPResponse.json();
-
-  return commissionsFromJson(respBody);
+  if (twoPResponse.status === 429) {
+    await sleep(5 * 61 * 1000);
+    return await getCommissionsForPage(authData, page, perPage, params);
+  } else {
+    const respBody = await twoPResponse.json();
+    return commissionsFromJson(respBody);
+  }
 }
 
-function fetchTwoP(url: string, authData: AuthHeaders): Promise<any> {
+function fetchTwoP(url: string, authData: AuthHeaders) {
   const headers = {
     'access-token': authData.accessToken,
     client: authData.client,
@@ -291,7 +296,7 @@ function fetchTwoP(url: string, authData: AuthHeaders): Promise<any> {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   };
-  return fetch(url, {
+  return fetch.default(url, {
     method: 'get',
     headers,
   });
