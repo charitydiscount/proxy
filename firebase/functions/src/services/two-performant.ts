@@ -84,7 +84,6 @@ export async function getPrograms() {
     programs = programs.concat(market.programs);
   }
 
-  // programs.forEach((p) => (p.source = '2p'));
   return programs;
 }
 

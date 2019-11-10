@@ -8,6 +8,12 @@ export const getPrograms = async (): Promise<Program[]> => {
   return twoPPrograms
     .map((twoPP) => {
       const program = toProgramEntity(twoPP);
+      if (!twoPP.enableLeads) {
+        program.defaultLeadCommissionAmount = null;
+      }
+      if (!twoPP.enableSales) {
+        program.defaultSaleCommissionRate = null;
+      }
       program.source = '2p';
       return program;
     })
