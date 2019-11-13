@@ -70,7 +70,7 @@ public class TwoPerformantService implements AffiliateService {
   }
 
   @Override
-  public List<AdvertiserPromotion> getPromotions(int programId) {
+  public List<AdvertiserPromotion> getPromotions() {
     HttpHeaders httpHeaders = getAuthHeaders();
 
     PromotionsResponse response = getPromotionsForPage(httpHeaders, 1);
@@ -79,6 +79,15 @@ public class TwoPerformantService implements AffiliateService {
     IntStream.range(response.pagination.currentPage + 1, response.pagination.pages).forEach(page -> {
       promotions.addAll(getPromotionsForPage(httpHeaders, page).advertiserPromotions);
     });
+
+    promotions.forEach(p -> p.setSource("2p"));
+
+    return promotions;
+  }
+
+  @Override
+  public List<AdvertiserPromotion> getPromotions(int programId) {
+    List<AdvertiserPromotion> promotions = getPromotions();
 
     promotions.removeIf(p -> p.getProgramId() != programId);
     promotions.forEach(p -> p.setSource("2p"));

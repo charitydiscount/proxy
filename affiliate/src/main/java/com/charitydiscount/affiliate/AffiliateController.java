@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,22 +21,29 @@ public class AffiliateController {
 
   @GetMapping("/programs/{programId}/promotions")
   public List<AdvertiserPromotion> getPromotionsForProgram(@PathVariable int programId) {
-    List<AdvertiserPromotion> promotions = new ArrayList<>();
-
+    Map<Integer, List<AdvertiserPromotion>> advertiserPromotions = new HashMap<>();
     MemcacheService memcacheService = MemcacheServiceFactory.getMemcacheService();
     Object cachedData = memcacheService.get(getCacheKey(programId));
 
     if (cachedData != null) {
       //noinspection unchecked
       return (List<AdvertiserPromotion>) cachedData;
+    } else if (memcacheService.get("cached") != null) {
+      return new ArrayList<>();
     }
 
     for (AffiliateService affiliateService : affiliateServices) {
-      promotions.addAll(affiliateService.getPromotions(programId));
+      affiliateService.getPromotions().forEach(
+          (promotion) -> advertiserPromotions.computeIfAbsent(promotion.getProgramId(),
+              (k) -> new ArrayList<>())
+              .add(promotion));
     }
 
-    memcacheService.put(getCacheKey(programId), promotions, Expiration.byDeltaSeconds(3600));
-    return promotions;
+    advertiserPromotions.forEach((id, promotions) -> memcacheService.put(getCacheKey(id), promotions,
+        Expiration.byDeltaSeconds(3600)));
+    memcacheService.put("cached", true, Expiration.byDeltaSeconds(3600));
+
+    return advertiserPromotions.getOrDefault(programId, new ArrayList<>());
   }
 
   private String getCacheKey(int programId) {

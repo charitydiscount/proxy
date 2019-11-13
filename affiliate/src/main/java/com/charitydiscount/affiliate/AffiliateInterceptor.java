@@ -3,8 +3,6 @@ package com.charitydiscount.affiliate;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
-import com.google.firebase.auth.FirebaseAuth;
-import org.apache.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -24,13 +22,13 @@ public class AffiliateInterceptor implements HandlerInterceptor {
 
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-    try {
-      String token = request.getHeader(HttpHeaders.AUTHORIZATION).substring(6).trim();
-      FirebaseAuth.getInstance().verifyIdToken(token);
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new ForbiddenException();
-    }
+//    try {
+//      String token = request.getHeader(HttpHeaders.AUTHORIZATION).substring(6).trim();
+//      FirebaseAuth.getInstance().verifyIdToken(token);
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//      throw new ForbiddenException();
+//    }
 
     return true;
   }
