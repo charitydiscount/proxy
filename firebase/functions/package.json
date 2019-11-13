@@ -15,16 +15,16 @@
   "main": "lib/index.js",
   "dependencies": {
     "@elastic/elasticsearch": "^7.4.0",
-    "@google-cloud/firestore": "^2.5.0",
-    "@types/node-fetch": "^2.5.2",
-    "camelcase-keys": "^6.1.0",
-    "firebase-admin": "^8.6.1",
+    "@google-cloud/firestore": "^2.6.0",
+    "@types/node-fetch": "^2.5.3",
+    "camelcase-keys": "^6.1.1",
+    "firebase-admin": "^8.7.0",
     "firebase-functions": "^3.3.0",
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
-    "tslint": "^5.20.0",
-    "typescript": "^3.6.4"
+    "tslint": "^5.20.1",
+    "typescript": "^3.7.2"
   },
   "private": true
 }

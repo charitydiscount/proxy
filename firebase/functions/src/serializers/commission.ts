@@ -104,7 +104,7 @@ export const commissionsFromJson = (json: any): CommissionsResponse => {
 };
 
 export const toCommissionEntity = (comm: Commission): entity.Commission => {
-  return {
+  const commission: entity.Commission = {
     amount: Number.parseFloat(comm.amountInWorkingCurrency),
     createdAt: Firestore.Timestamp.fromMillis(Date.parse(comm.createdAt)),
     currency: comm.workingCurrencyCode,
@@ -112,4 +112,8 @@ export const toCommissionEntity = (comm: Commission): entity.Commission => {
     status: comm.status,
     originId: comm.id,
   };
+  if (comm.reason && Array.isArray(comm.reason)) {
+    commission.reason = comm.reason.join(' ');
+  }
+  return commission;
 };

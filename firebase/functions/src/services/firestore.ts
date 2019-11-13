@@ -1,6 +1,5 @@
 import Firestore = require('@google-cloud/firestore');
 import { config } from 'firebase-functions';
-import { FieldValue } from '@google-cloud/firestore';
 import * as entity from '../entities';
 import { Commission, toCommissionEntity } from '../serializers/commission';
 
@@ -65,17 +64,17 @@ export async function updateCommissions(commissions: Commission[]) {
     return;
   }
 
-  const userCommissions: { [userId: string]: Commission[] } = {};
-  commissions.forEach((userCommission) =>
-    addUserCommission(userCommissions, userCommission),
+  const userCommissions: { [userId: string]: { [commissionId: number]: entity.Commission } } = {};
+  commissions.forEach((commission) =>
+    userCommissions[commission.userId] = {
+      ...userCommissions[commission.userId],
+      ...{ [commission.id]: toCommissionEntity(commission) }
+    }
   );
 
   const promises: Promise<any>[] = [];
-
   for (const userId in userCommissions) {
-    const transactions: entity.Commission[] = userCommissions[userId].map(
-      (userComm) => toCommissionEntity(userComm),
-    );
+
     promises.push(
       db
         .collection('commissions')
@@ -83,7 +82,7 @@ export async function updateCommissions(commissions: Commission[]) {
         .set(
           {
             userId,
-            transactions: FieldValue.arrayUnion(...transactions),
+            ...userCommissions[userId],
           },
           { merge: true },
         ),
@@ -91,48 +90,6 @@ export async function updateCommissions(commissions: Commission[]) {
   }
 
   return promises;
-}
-
-export const getLastFinalCommissions = async (
-  userId: string,
-  status: string,
-): Promise<entity.Commission | null> => {
-  const commissionsSnap = await db
-    .collection('commissions')
-    .doc(userId)
-    .get();
-  if (!commissionsSnap.exists) {
-    return null;
-  }
-
-  const userCommissions: entity.Commission[] = commissionsSnap.data()!
-    .transactions;
-
-  return (
-    userCommissions.find((commission) => commission.status === status) || null
-  );
-};
-
-function addUserCommission(
-  target: { [userId: string]: Commission[] },
-  commission: Commission,
-) {
-  const userId = getUserForCommission(commission);
-  if (target.hasOwnProperty(userId)) {
-    target[userId].push(commission);
-  } else {
-    target[userId] = [commission];
-  }
-
-  return target;
-}
-
-function getUserForCommission(commission: Commission) {
-  if (!commission.statsTags || commission.statsTags.length === 0) {
-    return '';
-  }
-
-  return commission.statsTags.slice(1, commission.statsTags.length - 1);
 }
 
 async function deleteDocsOfCollection(collection: string) {

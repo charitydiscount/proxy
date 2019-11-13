@@ -35,11 +35,11 @@ export const updatePrograms = getFunction()
     );
   });
 
-export const updateCommissions = getFunction(540)
+export const updatePendingCommissions = getFunction(540)
   .pubsub.schedule('every 24 hours')
   .timeZone('Europe/Bucharest')
   .onRun((context: any) => {
-    return controller.updateCommissions();
+    return controller.updatePendingCommissions();
   });
 
 export const updateProducts = getFunction()

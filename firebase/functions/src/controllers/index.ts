@@ -29,10 +29,9 @@ export const getAffiliateCodes = () => {
   ];
 };
 
-export const updateCommissions = async () => {
+export const updatePendingCommissions = async () => {
   try {
     const commissions = await twoPService.getPendingCommissions();
-    // const lastPaidCommission = await firestoreService.getLastFinalCommissions()
     return firestoreService
       .updateCommissions(commissions)
       .catch((e) => console.log(e.message));

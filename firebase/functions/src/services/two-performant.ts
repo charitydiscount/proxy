@@ -150,13 +150,19 @@ export async function getPendingCommissions(): Promise<Commission[]> {
   const commissions = await getAllEntities(
     getCommissionsForPage,
     'commissions',
-    '&filter[status]=pending&sort[date]=desc',
+    {
+      perPage: 50,
+      params: '&filter[status]=pending&sort[date]=desc',
+    },
   );
   commissions.push(
     ...(await getAllEntities(
       getCommissionsForPage,
       'commissions',
-      'filter[status]=accepted&sort[date]=desc',
+      {
+        perPage: 50,
+        params: 'filter[status]=accepted&sort[date]=desc',
+      }
     )),
   );
   return commissions;
@@ -169,48 +175,63 @@ export async function getFinalCommissions(
   const commissions = await getAllEntities(
     getCommissionsForPage,
     'commissions',
-    '&filter[status]=paid&sort[date]=desc',
-    (pageResponse: CommissionsResponse) =>
-      lastPaidCommission !== undefined &&
-      !!pageResponse.commissions.find(
-        (comm) => comm.id === lastPaidCommission.id,
-      ),
+    {
+      params: '&filter[status]=paid&sort[date]=desc',
+      perPage: 50,
+      stopWhen: (pageResponse: CommissionsResponse) =>
+        lastPaidCommission !== undefined &&
+        !!pageResponse.commissions.find(
+          (comm) => comm.id === lastPaidCommission.id,
+        )
+    },
   );
   commissions.push(
     ...(await getAllEntities(
       getCommissionsForPage,
       'commissions',
-      '&filter[status]=rejected&sort[date]=desc',
-      (pageResponse: CommissionsResponse) =>
-        lastRejectedCommission !== undefined &&
-        !!pageResponse.commissions.find(
-          (comm) => comm.id === lastRejectedCommission.id,
-        ),
+      {
+        params: '&filter[status]=rejected&sort[date]=desc',
+        perPage: 50,
+        stopWhen: (pageResponse: CommissionsResponse) =>
+          lastRejectedCommission !== undefined &&
+          !!pageResponse.commissions.find(
+            (comm) => comm.id === lastRejectedCommission.id,
+          )
+      },
     )),
   );
   return commissions;
 }
 
+interface GetterOptions {
+  params?: string,
+  stopWhen?: Function,
+  perPage?: number,
+}
+
 async function getAllEntities(
   pageRetriever: Function,
   relevantKey: string,
-  params: string | undefined = undefined,
-  stopWhen: Function | undefined = undefined,
+  options?: GetterOptions,
 ): Promise<any[]> {
   if (!authHeaders) {
     authHeaders = await getAuthHeaders();
   }
 
+  const perPage = options && options.perPage ? options.perPage : itemsPerPage
+
   let responseForPage = await pageRetriever(
     authHeaders,
     1,
-    itemsPerPage,
-    params,
+    perPage,
+    options ? options.params : undefined,
   );
   let entities = responseForPage[relevantKey];
 
-  if (stopWhen !== undefined && stopWhen(responseForPage) === true) {
-    return entities;
+  if (options) {
+    if (options.stopWhen !== undefined && options.stopWhen(responseForPage) === true) {
+      return entities;
+    }
   }
 
   const totalPages = responseForPage.metadata.pagination.pages;
@@ -221,11 +242,13 @@ async function getAllEntities(
       authHeaders,
       page,
       itemsPerPage,
-      params,
+      options ? options.params : undefined,
     );
     entities = entities.concat(responseForPage[relevantKey]);
-    if (stopWhen !== undefined && stopWhen(responseForPage) === true) {
-      break;
+    if (options) {
+      if (options.stopWhen !== undefined && options.stopWhen(responseForPage) === true) {
+        break;
+      }
     }
   }
 
