@@ -71,13 +71,13 @@ export async function updateCommissions(commissions: Commission[]) {
   const userCommissions: {
     [userId: string]: { [commissionId: number]: entity.Commission };
   } = {};
-  commissions.forEach(
-    (commission) =>
-      (userCommissions[commission.userId] = {
-        ...userCommissions[commission.userId],
-        ...{ [commission.userId]: toCommissionEntity(commission, userPercent) },
-      }),
-  );
+  commissions.forEach((commission) => {
+    const userIdOfCommission = getUserForCommission(commission);
+    userCommissions[userIdOfCommission] = {
+      ...userCommissions[userIdOfCommission],
+      ...{ [commission.id]: toCommissionEntity(commission, userPercent) },
+    };
+  });
 
   const promises: Promise<any>[] = [];
   for (const userId in userCommissions) {
@@ -96,6 +96,14 @@ export async function updateCommissions(commissions: Commission[]) {
   }
 
   return promises;
+}
+
+function getUserForCommission(commission: Commission) {
+  if (!commission.statsTags || commission.statsTags.length === 0) {
+    return '';
+  }
+
+  return commission.statsTags.slice(1, commission.statsTags.length - 1);
 }
 
 async function deleteDocsOfCollection(collection: string) {
