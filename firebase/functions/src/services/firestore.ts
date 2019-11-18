@@ -65,17 +65,22 @@ export async function updateCommissions(commissions: Commission[]) {
     return;
   }
 
-  const userCommissions: { [userId: string]: { [commissionId: number]: entity.Commission } } = {};
-  commissions.forEach((commission) =>
-    userCommissions[commission.userId] = {
-      ...userCommissions[commission.userId],
-      ...{ [commission.id]: toCommissionEntity(commission) }
-    }
+  const meta = await db.doc('meta/2performant').get();
+  const userPercent: number = meta.data()!.percentage || 0.6;
+
+  const userCommissions: {
+    [userId: string]: { [commissionId: number]: entity.Commission };
+  } = {};
+  commissions.forEach(
+    (commission) =>
+      (userCommissions[commission.userId] = {
+        ...userCommissions[commission.userId],
+        ...{ [commission.userId]: toCommissionEntity(commission, userPercent) },
+      }),
   );
 
   const promises: Promise<any>[] = [];
   for (const userId in userCommissions) {
-
     promises.push(
       db
         .collection('commissions')

@@ -103,9 +103,12 @@ export const commissionsFromJson = (json: any): CommissionsResponse => {
   return camelcaseKeys(json, { deep: true });
 };
 
-export const toCommissionEntity = (comm: Commission): entity.Commission => {
+export const toCommissionEntity = (
+  comm: Commission,
+  userPercent: number,
+): entity.Commission => {
   const commission: entity.Commission = {
-    amount: Number.parseFloat(comm.amountInWorkingCurrency),
+    amount: Number.parseFloat(comm.amountInWorkingCurrency) * userPercent,
     createdAt: Firestore.Timestamp.fromMillis(Date.parse(comm.createdAt)),
     currency: comm.workingCurrencyCode,
     shopId: comm.programId,
