@@ -16,18 +16,44 @@ const elastic = new Client({
  * @param {String} query
  * @param {Boolean} exact
  */
-async function search(query, exact = false) {
+async function searchPrograms(query, exact = false) {
   let queryOperator = 'prefix';
   if (exact) {
     queryOperator = 'term';
   }
+
+  return search(process.env.INDEX_PROGRAMS, query, queryOperator, 'name');
+}
+
+/**
+ * Search the programs index based on the provied query (simple search term)
+ * @param {String} query
+ * @param {Boolean} exact
+ */
+async function searchProducts(query, exact = false) {
+  let queryOperator = 'prefix';
+  if (exact) {
+    queryOperator = 'term';
+  }
+
+  return search(process.env.INDEX_PRODUCTS, query, queryOperator, 'title');
+}
+
+/**
+ * Search the programs index based on the provied query (simple search term)
+ * @param {String} index
+ * @param {String} query
+ * @param {String} queryOperator
+ * @param {String} field
+ */
+async function search(index, query, queryOperator, field) {
   try {
     const { body } = await elastic.search({
-      index: process.env.INDEX_PROGRAMS,
+      index,
       body: {
         query: {
           [queryOperator]: {
-            name: {
+            [field]: {
               value: query,
             },
           },
@@ -42,5 +68,6 @@ async function search(query, exact = false) {
 }
 
 module.exports = {
-  search,
+  searchPrograms,
+  searchProducts,
 };

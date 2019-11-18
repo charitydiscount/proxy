@@ -2,8 +2,19 @@
 const services = require('./services');
 const firestore = require('./firestore');
 
-async function search(req, res) {
-  const hits = await services.search(req.query.query, req.query.exact || false);
+async function searchPrograms(req, res) {
+  const hits = await services.searchPrograms(
+    req.query.query,
+    req.query.exact || false
+  );
+  res.json(hits);
+}
+
+async function searchProducts(req, res) {
+  const hits = await services.searchProducts(
+    req.query.title,
+    req.query.exact || false
+  );
   res.json(hits);
 }
 
@@ -12,4 +23,4 @@ async function copyCollection(req, res) {
   res.sendStatus(200);
 }
 
-module.exports = { search, copyCollection };
+module.exports = { searchPrograms, searchProducts, copyCollection };

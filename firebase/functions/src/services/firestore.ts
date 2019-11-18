@@ -50,6 +50,7 @@ async function updateProgramsGeneral(programs: entity.Program[]) {
     const docPrograms = programs.slice(index, index + batchSize);
     await db.collection('shops').add({
       batch: docPrograms,
+      order: index,
       createdAt: Firestore.FieldValue.serverTimestamp(),
     });
   }
@@ -103,7 +104,7 @@ async function deleteDocsOfCollection(collection: string) {
 
 async function updateFavoritePrograms(programs: entity.Program[]) {
   const favoritePrograms = await db.collection('favoritePrograms').get();
-  if (favoritePrograms.empty) {
+  if (!favoritePrograms || favoritePrograms.empty) {
     return;
   }
 

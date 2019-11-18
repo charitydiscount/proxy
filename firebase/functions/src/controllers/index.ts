@@ -16,8 +16,7 @@ export const getPrograms = async (): Promise<Program[]> => {
       }
       program.source = '2p';
       return program;
-    })
-    .sort((p1, p2) => p1.name.localeCompare(p2.name));
+    });
 };
 
 export const getAffiliateCodes = () => {
