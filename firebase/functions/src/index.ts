@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions';
-import twoPService from './services/two-performant';
+// import twoPService from './services/two-performant';
 import * as firestoreService from './services/firestore';
 import elasticService from './services/elastic';
 import * as controller from './controllers';
@@ -43,20 +43,20 @@ export const updatePendingCommissions = getFunction(540)
     return controller.updatePendingCommissions();
   });
 
-export const updateProducts = getFunction()
-  .pubsub.schedule('every 24 hours')
-  .timeZone('Europe/Bucharest')
-  .onRun(async (context: any) => {
-    try {
-      const products = await twoPService.getProducts();
-      console.log(`Retrieved ${products.length} products`);
-      const updatePromises = [elasticService.updateProductsIndex(products)];
+// export const updateProducts = getFunction()
+//   .pubsub.schedule('every 24 hours')
+//   .timeZone('Europe/Bucharest')
+//   .onRun(async (context: any) => {
+//     try {
+//       const products = await twoPService.getProducts();
+//       console.log(`Retrieved ${products.length} products`);
+//       const updatePromises = [elasticService.updateProductsIndex(products)];
 
-      return Promise.all(updatePromises).catch((e: Error) =>
-        console.log(e.message),
-      );
-    } catch (error) {
-      console.log(error.message);
-      return;
-    }
-  });
+//       return Promise.all(updatePromises).catch((e: Error) =>
+//         console.log(e.message),
+//       );
+//     } catch (error) {
+//       console.log(error.message);
+//       return;
+//     }
+//   });
