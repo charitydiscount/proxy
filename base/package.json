@@ -10,12 +10,12 @@
   "author": "Andrei Stefanie",
   "license": "ISC",
   "dependencies": {
-    "@elastic/elasticsearch": "^7.3.0",
-    "dotenv": "^8.1.0",
+    "@elastic/elasticsearch": "^7.4.0",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-bearer-token": "^2.4.0",
-    "firebase-admin": "^8.4.0",
-    "helmet": "^3.20.1",
+    "firebase-admin": "^8.8.0",
+    "helmet": "^3.21.2",
     "jwt-decode": "^2.2.0",
     "node-fetch": "^2.6.0"
   }

@@ -6,7 +6,8 @@ import * as controller from './controllers';
 
 function getFunction(
   timeoutSeconds: number = 300,
-  memory = functions.VALID_MEMORY_OPTIONS[1],
+  memory: typeof functions.VALID_MEMORY_OPTIONS[number] = functions
+    .VALID_MEMORY_OPTIONS[1],
 ) {
   const runtimeOpts = {
     timeoutSeconds,

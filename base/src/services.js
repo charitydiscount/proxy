@@ -63,7 +63,7 @@ async function search(index, query, queryOperator, field) {
 
     return body.hits;
   } catch (e) {
-    console.log(e);
+    console.log(e.body);
   }
 }
 

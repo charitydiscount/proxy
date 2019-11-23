@@ -12,7 +12,7 @@ async function searchPrograms(req, res) {
 
 async function searchProducts(req, res) {
   const hits = await services.searchProducts(
-    req.query.title,
+    req.query.query,
     req.query.exact || false
   );
   res.json(hits);
