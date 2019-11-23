@@ -5,16 +5,18 @@ const firestore = require('./firestore');
 async function searchPrograms(req, res) {
   const hits = await services.searchPrograms(
     req.query.query,
-    req.query.exact || false
+    req.query.exact || false,
   );
   res.json(hits);
 }
 
 async function searchProducts(req, res) {
-  const hits = await services.searchProducts(
-    req.query.query,
-    req.query.exact || false
-  );
+  const hits = await services.searchProducts(req.query.query);
+  res.json(hits);
+}
+
+async function getFeaturedProducts(req, res) {
+  const hits = await services.searchProducts('toamna', ['category']);
   res.json(hits);
 }
 
@@ -23,4 +25,9 @@ async function copyCollection(req, res) {
   res.sendStatus(200);
 }
 
-module.exports = { searchPrograms, searchProducts, copyCollection };
+module.exports = {
+  searchPrograms,
+  searchProducts,
+  getFeaturedProducts,
+  copyCollection,
+};

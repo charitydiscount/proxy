@@ -28,15 +28,25 @@ async function searchPrograms(query, exact = false) {
 /**
  * Search the programs index based on the provied query (simple search term)
  * @param {String} query
- * @param {Boolean} exact
  */
-async function searchProducts(query, exact = false) {
-  let queryOperator = 'prefix';
-  if (exact) {
-    queryOperator = 'term';
-  }
+async function searchProducts(query, fields = ['title']) {
+  try {
+    const { body } = await elastic.search({
+      index: process.env.INDEX_PRODUCTS,
+      body: {
+        query: {
+          multi_match: {
+            query,
+            fields,
+          },
+        },
+      },
+    });
 
-  return search(process.env.INDEX_PRODUCTS, query, queryOperator, 'title');
+    return body.hits;
+  } catch (e) {
+    console.log(e.body);
+  }
 }
 
 /**
