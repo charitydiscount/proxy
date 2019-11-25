@@ -14,16 +14,6 @@ exports.jwtAuthenticate = (req, res, next) => {
   if (!req.token) {
     return res.sendStatus(401);
   }
-  try {
-    if (jwtDecode(req.token).email === process.env.SERVICE_ACCOUNT) {
-      req.isServiceAccount = true;
-      next();
-      return;
-    }
-  } catch (e) {
-    res.sendStatus(401);
-    return;
-  }
   admin
     .auth()
     .verifyIdToken(req.token)

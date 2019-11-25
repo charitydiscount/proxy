@@ -34,6 +34,8 @@ async function searchProducts(query, fields = ['title']) {
     const { body } = await elastic.search({
       index: process.env.INDEX_PRODUCTS,
       body: {
+        from: 0,
+        size: 50,
         query: {
           multi_match: {
             query,
@@ -61,6 +63,8 @@ async function search(index, query, queryOperator, field) {
     const { body } = await elastic.search({
       index,
       body: {
+        from: 0,
+        size: 50,
         query: {
           [queryOperator]: {
             [field]: {
