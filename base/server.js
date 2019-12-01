@@ -6,9 +6,11 @@ const midlewares = require('./src/middleware');
 
 const app = express();
 
+app.use(midlewares.cors);
+app.options('*', midlewares.cors);
+
 app.use(helmet());
 app.use(bearerToken());
-app.use(midlewares.cors);
 app.use(midlewares.jwtAuthenticate);
 
 app.use(router);
