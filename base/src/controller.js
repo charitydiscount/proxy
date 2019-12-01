@@ -11,12 +11,12 @@ async function searchPrograms(req, res) {
 }
 
 async function searchProducts(req, res) {
-  const hits = await services.searchProducts(req.query.query);
+  const hits = await services.searchProducts(req.query.query, req.query);
   res.json(hits);
 }
 
 async function getFeaturedProducts(req, res) {
-  const hits = await services.searchProducts('iarna', ['category']);
+  const hits = await services.searchProducts('iarna', { fields: ['category'] });
   res.json(hits);
 }
 

@@ -29,20 +29,54 @@ async function searchPrograms(query, exact = false) {
  * Search the programs index based on the provied query (simple search term)
  * @param {String} query
  */
-async function searchProducts(query, fields = ['title']) {
-  try {
-    const { body } = await elastic.search({
-      index: process.env.INDEX_PRODUCTS,
-      body: {
-        from: 0,
-        size: 50,
-        query: {
+async function searchProducts(query, {
+  fields = ['title'],
+  page = 0,
+  size = 50,
+  sort = undefined,
+  min = undefined,
+  max = undefined }) {
+  const searchBody = {
+    from: page,
+    size: size,
+    query: {
+      bool: {
+        must: {
           multi_match: {
             query,
             fields,
           },
         },
-      },
+      }
+    },
+  }
+
+  if (sort === 'asc' || sort === 'desc') {
+    searchBody.sort = [{ price: sort }];
+  }
+
+  if (min || max) {
+    const minPrice = parseInt(min);
+    const maxPrice = parseInt(max);
+    if (minPrice !== NaN || maxPrice !== NaN) {
+      searchBody.query.bool.filter = {
+        range: { price: {} }
+      };
+
+      if (minPrice !== NaN) {
+        searchBody.query.bool.filter.range.price.gte = minPrice;
+      }
+
+      if (maxPrice !== NaN) {
+        searchBody.query.bool.filter.range.price.lte = maxPrice;
+      }
+    }
+  }
+
+  try {
+    const { body } = await elastic.search({
+      index: process.env.INDEX_PRODUCTS,
+      body: searchBody,
     });
 
     return body.hits;
