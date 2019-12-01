@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
+const cors = require('cors');
 const firebaseKeys = require('../CharityDiscount.json');
-const jwtDecode = require('jwt-decode');
 
 admin.initializeApp({
   credential: admin.credential.cert(firebaseKeys),
@@ -23,3 +23,24 @@ exports.jwtAuthenticate = (req, res, next) => {
     })
     .catch(() => res.sendStatus(401));
 };
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://charitydiscount.ro',
+  'https://charitydiscount.github.io'
+];
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not ' +
+        'allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+  },
+}
+
+exports.cors = cors(corsOptions);

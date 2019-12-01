@@ -16,7 +16,7 @@ async function searchProducts(req, res) {
 }
 
 async function getFeaturedProducts(req, res) {
-  const hits = await services.searchProducts('toamna', ['category']);
+  const hits = await services.searchProducts('iarna', ['category']);
   res.json(hits);
 }
 
