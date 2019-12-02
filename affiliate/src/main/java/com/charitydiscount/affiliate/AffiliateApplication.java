@@ -27,7 +27,9 @@ class ProductServiceInterceptorAppConfig extends WebMvcConfigurationSupport {
             .allowedOrigins(
                 "http://localhost:3000",
                 "https://charitydiscount.ro",
-                "https://charitydiscount.github.io");
+                "https://charitydiscount.github.io")
+            .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+            .allowedHeaders("authorization", "content-type", "x-auth-token");
     }
 
     @Override
