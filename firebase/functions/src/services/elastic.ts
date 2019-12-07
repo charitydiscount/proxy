@@ -14,10 +14,6 @@ export async function updateProgramsIndex(programs: Program[]) {
   if (!elastic) {
     elastic = new Client({
       node: config().elastic.endpoint,
-      auth: {
-        username: config().elastic.user || '',
-        password: config().elastic.pass || '',
-      },
     });
   }
 
@@ -69,10 +65,6 @@ export async function updateProductsIndex(products: Product[]) {
   if (!elastic) {
     elastic = new Client({
       node: config().elastic.endpoint,
-      auth: {
-        username: config().elastic.user || '',
-        password: config().elastic.pass || '',
-      },
     });
   }
 

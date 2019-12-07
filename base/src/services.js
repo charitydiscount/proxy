@@ -5,10 +5,6 @@ require('dotenv').config();
 
 const elastic = new Client({
   node: process.env.ENDPOINT,
-  auth: {
-    username: process.env.ELASTIC_USER,
-    password: process.env.ELASTIC_PASS,
-  },
 });
 
 /**
@@ -29,13 +25,17 @@ async function searchPrograms(query, exact = false) {
  * Search the programs index based on the provied query (simple search term)
  * @param {String} query
  */
-async function searchProducts(query, {
-  fields = ['title'],
-  page = 0,
-  size = 50,
-  sort = undefined,
-  min = undefined,
-  max = undefined }) {
+async function searchProducts(
+  query,
+  {
+    fields = ['title'],
+    page = 0,
+    size = 50,
+    sort = undefined,
+    min = undefined,
+    max = undefined,
+  },
+) {
   const searchBody = {
     from: page,
     size: size,
@@ -47,9 +47,9 @@ async function searchProducts(query, {
             fields,
           },
         },
-      }
+      },
     },
-  }
+  };
 
   if (sort === 'asc' || sort === 'desc') {
     searchBody.sort = [{ price: sort }];
@@ -60,7 +60,7 @@ async function searchProducts(query, {
     const maxPrice = parseInt(max);
     if (minPrice !== NaN || maxPrice !== NaN) {
       searchBody.query.bool.filter = {
-        range: { price: {} }
+        range: { price: {} },
       };
 
       if (minPrice !== NaN) {
